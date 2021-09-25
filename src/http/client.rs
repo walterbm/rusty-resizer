@@ -1,6 +1,6 @@
-use actix_web::client::{Client as ActixWebClient, Connector};
 use actix_web::http::StatusCode;
 use actix_web::web::Bytes;
+use awc::{Client as ActixWebClient, Connector};
 use openssl::ssl::{SslConnector, SslMethod};
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
@@ -16,7 +16,7 @@ impl Client {
         let ssl_builder = SslConnector::builder(SslMethod::tls()).unwrap();
 
         let client = ActixWebClient::builder()
-            .connector(Connector::new().ssl(ssl_builder.build()).finish())
+            .connector(Connector::new().ssl(ssl_builder.build()))
             .finish();
         return Self { client, user_agent };
     }
@@ -25,7 +25,7 @@ impl Client {
         let mut request = self
             .client
             .get(url)
-            .header("User-Agent", self.user_agent)
+            .append_header(("User-Agent", self.user_agent))
             .send()
             .await
             .map_err(|_| ClientError::InvalidRequest)?;
