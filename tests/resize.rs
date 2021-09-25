@@ -72,10 +72,11 @@ async fn test_resize_can_resize_an_image_and_preserve_aspect_ratio() {
     // Arrange
     let address = spawn_app();
     let client = reqwest::Client::new();
+    let test_image_one = "https://raw.githubusercontent.com/walterbm/rusty-resizer/main/tests/fixtures/test-image-one.jpg";
 
     // Act
     let response = client
-        .get(format!("{}/resize?source=https://www.publicdomainpictures.net/pictures/90000/velka/giant-mexican-flag-waves.jpg&width=100&height=100", address))
+        .get(format!("{}/resize?source={}&width=100&height=100", address, test_image_one))
         .send()
         .await
         .expect("Failed to execute request.");
@@ -88,5 +89,5 @@ async fn test_resize_can_resize_an_image_and_preserve_aspect_ratio() {
     let image = ImageReader::new(Cursor::new(bytes)).with_guessed_format().unwrap().decode().expect("Failed to decode image");
     let (width, height) = image.dimensions();
     assert_eq!(width, 100, "width is equal to 100px");
-    assert_eq!(height, 66, "height is equal to 66px");
+    assert_eq!(height, 100, "height is equal to 100px");
 }
