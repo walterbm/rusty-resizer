@@ -44,7 +44,7 @@ async fn resize<'app>(
 
             image.resize(options.width, options.height);
 
-            let buffer = image.to_buffer(options.quality.unwrap_or(85))?;
+            let buffer = image.to_buffer_mut(options.quality.unwrap_or(85))?;
 
             let content_type = image.mime_type()?;
 

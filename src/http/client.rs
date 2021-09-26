@@ -22,11 +22,11 @@ impl<'config> Client<'config> {
         let client = ActixWebClient::builder()
             .connector(Connector::new().ssl(ssl_builder.build()))
             .finish();
-        return Self {
+        Self {
             client,
             user_agent,
             allowed_hosts,
-        };
+        }
     }
 
     pub async fn get(&self, url: &str) -> Result<Bytes, ClientError> {
@@ -61,7 +61,7 @@ impl<'config> Client<'config> {
             return Ok(());
         }
 
-        return Err(ClientError::BlockedHost);
+        Err(ClientError::BlockedHost)
     }
 }
 

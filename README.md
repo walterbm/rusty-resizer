@@ -2,7 +2,7 @@
 
 ## About
 
-An _experimental_ image resizing http service written in Rust aiming for high concurrency with low memory usage.
+An _experimental_ image resizing http service written in Rust aiming for high concurrency, low memory usage, and most importantly accurate image resizing.
 
 ### Installation
 
@@ -15,7 +15,7 @@ An _experimental_ image resizing http service written in Rust aiming for high co
 
 ## Usage
 
-Currently this can only be build and run using Cargo. To start the server run:
+Currently this can only be built and run using Cargo. To start the server run:
 
 ```sh
 cargo run
@@ -29,7 +29,7 @@ Once the server is running images can be dynamically resized through the `/resiz
 curl localhost::8080/resize?source=image.jpeg&height=100&width=100&quality=85
 ```
 
-For security the source image host domains need to be explicitly allowed through the `$ALLOWED_HOSTS` ENV variable. Only images originating from those hosts are accepted by the resizer. For example:
+For security the source image host domain needs to be explicitly allowed through the `$ALLOWED_HOSTS` ENV variable. Only images originating from allowed hosts will be accepted by the resizer. For example:
 
 ```sh
 ALLOWED_HOSTS=raw.githubusercontent.com cargo run

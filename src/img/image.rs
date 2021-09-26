@@ -20,7 +20,7 @@ impl Image {
         self.wand.fit(width, height);
     }
 
-    pub fn to_buffer(&mut self, quality: u8) -> Result<Vec<u8>, ImageError> {
+    pub fn to_buffer_mut(&mut self, quality: u8) -> Result<Vec<u8>, ImageError> {
         let format = self.format()?;
 
         self.wand
