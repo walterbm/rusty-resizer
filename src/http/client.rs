@@ -3,25 +3,35 @@ use actix_web::web::Bytes;
 use awc::{Client as ActixWebClient, Connector};
 use openssl::ssl::{SslConnector, SslMethod};
 use std::fmt::{Display, Formatter, Result as FmtResult};
+use url::Url;
 
+static USER_AGENT: &str = "rusty-resizer/0.1.0";
 const MAX_ALLOWED_BYTES: usize = 20_000_000;
 
-pub struct Client {
+pub struct Client<'config> {
     client: ActixWebClient,
     user_agent: &'static str,
+    allowed_hosts: &'config str,
 }
 
-impl Client {
-    pub fn new(user_agent: &'static str) -> Self {
+impl<'config> Client<'config> {
+    pub fn new(allowed_hosts: &'config str) -> Self {
+        let user_agent = USER_AGENT;
         let ssl_builder = SslConnector::builder(SslMethod::tls()).unwrap();
 
         let client = ActixWebClient::builder()
             .connector(Connector::new().ssl(ssl_builder.build()))
             .finish();
-        return Self { client, user_agent };
+        return Self {
+            client,
+            user_agent,
+            allowed_hosts,
+        };
     }
 
     pub async fn get(&self, url: &str) -> Result<Bytes, ClientError> {
+        self.validate_host(url)?;
+
         let mut request = self
             .client
             .get(url)
@@ -41,12 +51,25 @@ impl Client {
             _ => Err(ClientError::InvalidRequest),
         }
     }
+
+    fn validate_host(&self, url: &str) -> Result<(), ClientError> {
+        let url = Url::parse(url).map_err(|_| ClientError::InvalidRequest)?;
+
+        let host = url.host_str().unwrap_or("invalid host");
+
+        if self.allowed_hosts.contains(host) {
+            return Ok(());
+        }
+
+        return Err(ClientError::BlockedHost);
+    }
 }
 
 pub enum ClientError {
     InvalidRequest,
     InvalidPayload,
     NotFound,
+    BlockedHost,
     InaccessibleImage,
 }
 
@@ -56,6 +79,7 @@ impl ClientError {
             Self::InvalidRequest => "Invalid Request For Image",
             Self::InvalidPayload => "Invalid Image Payload",
             Self::NotFound => "Image Not Found",
+            Self::BlockedHost => "Image Host Is Not Allowed",
             Self::InaccessibleImage => "Inaccessible Image",
         }
     }

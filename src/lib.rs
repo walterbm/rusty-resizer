@@ -1,7 +1,8 @@
 extern crate log;
 
 use actix_web::dev::Server;
-use actix_web::{error, get, middleware::Logger, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::web::Data;
+use actix_web::{error, middleware::Logger, web, App, HttpResponse, HttpServer, Responder};
 use http::Client;
 use img::{Image, ImageError};
 use magick_rust::magick_wand_genesis;
@@ -14,7 +15,11 @@ mod img;
 
 static START: Once = Once::new();
 
-static USER_AGENT: &str = "rusty-resizer/0.1.0";
+#[derive(Clone)]
+pub struct Configuration {
+    pub env: String,
+    pub allowed_hosts: String,
+}
 
 #[derive(Deserialize)]
 struct ResizeOptions {
@@ -25,9 +30,11 @@ struct ResizeOptions {
 }
 
 // /resize?source=url.jpeg&height=500&width=500&max_quality=85
-#[get("/resize")]
-async fn resize(options: web::Query<ResizeOptions>) -> Result<HttpResponse, ImageError> {
-    let client = Client::new(USER_AGENT);
+async fn resize<'app>(
+    options: web::Query<ResizeOptions>,
+    configuration: web::Data<Configuration>,
+) -> Result<HttpResponse, ImageError> {
+    let client = Client::new(&configuration.allowed_hosts);
 
     let response = client.get(&options.source).await;
 
@@ -57,16 +64,19 @@ pub async fn ping() -> impl Responder {
     HttpResponse::Ok().body("pong")
 }
 
-pub fn run(listener: TcpListener) -> Result<Server, std::io::Error> {
+pub fn run(listener: TcpListener, configuration: Configuration) -> Result<Server, std::io::Error> {
     START.call_once(|| {
         magick_wand_genesis();
     });
 
-    let server = HttpServer::new(|| {
+    let configuration = Data::new(configuration);
+
+    let server = HttpServer::new(move || {
         App::new()
-            .route("/ping", web::get().to(ping))
-            .service(resize)
             .wrap(Logger::default())
+            .route("/ping", web::get().to(ping))
+            .route("/resize", web::get().to(resize))
+            .app_data(configuration.clone())
     })
     .listen(listener)?
     .run();

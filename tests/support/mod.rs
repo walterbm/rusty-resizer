@@ -1,9 +1,15 @@
 use std::net::TcpListener;
 
+use rusty_resizer::Configuration;
+
 pub fn spawn_app() -> String {
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind to random system port");
     let port = listener.local_addr().unwrap().port();
-    let server = rusty_resizer::run(listener).expect("Failed to bind address");
+    let configuration = Configuration {
+        env: String::from("test"),
+        allowed_hosts: String::from("raw.githubusercontent.com"),
+    };
+    let server = rusty_resizer::run(listener, configuration).expect("Failed to bind address");
 
     let _ = tokio::spawn(server);
 

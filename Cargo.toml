@@ -20,6 +20,7 @@ log = "0.4.14"
 magick_rust = "0.15.0"
 openssl = "0.10.36"
 serde = "1.0.130"
+url = "2.2.2"
 
 [dev-dependencies]
 actix-rt = "2.2.0"
