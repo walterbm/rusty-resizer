@@ -86,6 +86,14 @@ async fn test_resize_can_resize_an_image_and_preserve_aspect_ratio() {
 
     // Assert
     assert!(response.status().is_success());
+    assert_eq!(
+        response.headers().get("Content-Type").unwrap(),
+        "image/jpeg"
+    );
+    assert_eq!(
+        response.headers().get("Cache-Control").unwrap(),
+        "max-age=3600"
+    );
 
     let bytes = response
         .bytes()

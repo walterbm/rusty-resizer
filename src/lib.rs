@@ -9,6 +9,7 @@ use magick_rust::magick_wand_genesis;
 use serde::Deserialize;
 use std::net::TcpListener;
 use std::sync::Once;
+use std::time::{Duration, SystemTime};
 
 mod http;
 mod img;
@@ -19,6 +20,7 @@ static START: Once = Once::new();
 pub struct Configuration {
     pub env: String,
     pub allowed_hosts: String,
+    pub cache_expiration: u64,
 }
 
 #[derive(Deserialize)]
@@ -48,7 +50,23 @@ async fn resize<'app>(
 
             let content_type = image.mime_type()?;
 
-            return Ok(HttpResponse::Ok().content_type(content_type).body(buffer));
+            let now = SystemTime::now();
+            let expire_time_in_seconds = configuration.cache_expiration * 60 * 60;
+
+            let response = HttpResponse::Ok()
+                .content_type(content_type)
+                .append_header(("Last-Modified", httpdate::fmt_http_date(now)))
+                .append_header((
+                    "Cache-Control",
+                    format!("max-age={}", expire_time_in_seconds),
+                ))
+                .append_header((
+                    "Expires",
+                    httpdate::fmt_http_date(now + Duration::from_secs(expire_time_in_seconds)),
+                ))
+                .body(buffer);
+
+            Ok(response)
         }
         Err(err) => Ok(HttpResponse::BadRequest().body(err.to_string())),
     }

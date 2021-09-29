@@ -8,6 +8,7 @@ pub fn spawn_app() -> String {
     let configuration = Configuration {
         env: String::from("test"),
         allowed_hosts: String::from("raw.githubusercontent.com"),
+        cache_expiration: 1,
     };
     let server = rusty_resizer::run(listener, configuration).expect("Failed to bind address");
 

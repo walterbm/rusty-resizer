@@ -12,10 +12,11 @@ name = "rusty_resizer"
 
 
 [dependencies]
-actix-web = "=4.0.0-beta.9"
 actix-http = "=3.0.0-beta.10"
+actix-web = "=4.0.0-beta.9"
 awc = { version = "=3.0.0-beta.8", features = ["openssl"] }
 env_logger = "0.9.0"
+httpdate = "1.0.1"
 log = "0.4.14"
 magick_rust = "0.15.0"
 openssl = "0.10.36"
