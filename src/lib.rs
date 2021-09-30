@@ -21,6 +21,7 @@ pub struct Configuration {
     pub env: String,
     pub allowed_hosts: String,
     pub cache_expiration: u64,
+    pub default_quality: u8,
 }
 
 #[derive(Deserialize)]
@@ -31,7 +32,17 @@ struct ResizeOptions {
     quality: Option<u8>,
 }
 
-// /resize?source=url.jpeg&height=500&width=500&max_quality=85
+/// Resize an image
+///
+/// Accepts four query parameters:
+///     - source
+///     - height
+///     - width
+///     - quality
+///
+/// Example request:
+///  resize?source=url.jpeg&height=500&width=500&max_quality=85
+///
 async fn resize<'app>(
     options: web::Query<ResizeOptions>,
     configuration: web::Data<Configuration>,
@@ -46,7 +57,8 @@ async fn resize<'app>(
 
             image.resize(options.width, options.height);
 
-            let buffer = image.to_buffer_mut(options.quality.unwrap_or(85))?;
+            let buffer =
+                image.to_buffer_mut(options.quality.unwrap_or(configuration.default_quality))?;
 
             let content_type = image.mime_type()?;
 
@@ -78,6 +90,7 @@ impl error::ResponseError for ImageError {
     }
 }
 
+/// Health check
 pub async fn ping() -> impl Responder {
     HttpResponse::Ok().body("pong")
 }
