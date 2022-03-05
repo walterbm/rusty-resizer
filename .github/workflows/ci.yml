@@ -10,7 +10,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - name: Install ImageMagick 7 (way too complicated because we need to build from source)
+      - name: Install ImageMagick 7 (way too complicated to replace default version)
         run: |
           sudo apt remove imagemagick imagemagick-6-common
           sudo cp /etc/apt/sources.list /etc/apt/sources.list~

@@ -26,14 +26,14 @@ By default the server will start on port `8080` but the port can be changed by s
 Once the server is running images can be dynamically resized through the `/resize` endpoint. For example:
 
 ```sh
-curl localhost::8080/resize?source=image.jpeg&height=100&width=100&quality=85
+curl localhost:8080/resize?source=image.jpeg&height=100&width=100&quality=85
 ```
 
 For security the source image host domain needs to be explicitly allowed through the `$ALLOWED_HOSTS` ENV variable. Only images originating from allowed hosts will be accepted by the resizer. For example:
 
 ```sh
 ALLOWED_HOSTS=raw.githubusercontent.com cargo run
-curl localhost::8080/resize?source=https://raw.githubusercontent.com/image.jpeg&height=100&width=100&quality=85
+curl localhost:8080/resize?source=https://raw.githubusercontent.com/image.jpeg&height=100&width=100&quality=85
 ```
 
 ## Test
