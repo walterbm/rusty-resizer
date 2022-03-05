@@ -20,7 +20,7 @@ impl<'config> Client<'config> {
         let ssl_builder = SslConnector::builder(SslMethod::tls()).unwrap();
 
         let client = ActixWebClient::builder()
-            .connector(Connector::new().ssl(ssl_builder.build()))
+            .connector(Connector::new().openssl(ssl_builder.build()))
             .finish();
         Self {
             client,

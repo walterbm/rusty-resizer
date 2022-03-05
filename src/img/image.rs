@@ -16,8 +16,7 @@ impl Image {
     }
 
     pub fn resize(&self, width: usize, height: usize) {
-        // this could be improved with access to imagemagick's thumbnail re-sizing
-        self.wand.fit(width, height);
+        self.wand.thumbnail_image(width, height);
     }
 
     pub fn to_buffer_mut(&mut self, quality: u8) -> Result<Vec<u8>, ImageError> {
