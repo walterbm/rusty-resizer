@@ -15,7 +15,23 @@ impl Image {
         }
     }
 
-    pub fn resize(&self, width: usize, height: usize) {
+    pub fn resize(&self, width: Option<usize>, height: Option<usize>) {
+        let (width, height) = match (width, height) {
+            (Some(width), Some(height)) => (width, height),
+            (Some(width), None) => (
+                width,
+                (self.wand.get_image_height() as f64
+                    * (width as f64 / self.wand.get_image_width() as f64)) as usize,
+            ),
+            (None, Some(height)) => (
+                (self.wand.get_image_width() as f64
+                    * (height as f64 / self.wand.get_image_height() as f64))
+                    as usize,
+                height,
+            ),
+            (None, None) => (self.wand.get_image_width(), self.wand.get_image_height()),
+        };
+
         self.wand.thumbnail_image(width, height);
     }
 

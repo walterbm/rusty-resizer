@@ -25,26 +25,6 @@ async fn test_resize_requires_source_query_params() {
 }
 
 #[actix_rt::test]
-async fn test_resize_requires_source_and_dimensions_query_params() {
-    // Arrange
-    let address = spawn_app();
-    let client = reqwest::Client::new();
-
-    // Act
-    let response = client
-        .get(format!("{}/resize?source=img.jpg", address))
-        .send()
-        .await
-        .expect("Failed to execute request.");
-
-    // Assert
-    assert!(response.status().is_client_error());
-
-    let text = response.text().await.expect("Failed to read response text");
-    assert_eq!("Query deserialize error: missing field `height`", text);
-}
-
-#[actix_rt::test]
 async fn test_resize_returns_error_if_image_source_is_invalid() {
     // Arrange
     let address = spawn_app();
@@ -68,7 +48,7 @@ async fn test_resize_returns_error_if_image_source_is_invalid() {
 }
 
 #[actix_rt::test]
-async fn test_resize_can_resize_an_image_and_preserve_aspect_ratio() {
+async fn test_resize_can_resize_an_image() {
     // Arrange
     let address = spawn_app();
     let client = reqwest::Client::new();
@@ -110,4 +90,49 @@ async fn test_resize_can_resize_an_image_and_preserve_aspect_ratio() {
     let (width, height) = image.dimensions();
     assert_eq!(width, 100, "width is equal to 100px");
     assert_eq!(height, 100, "height is equal to 100px");
+}
+
+#[actix_rt::test]
+async fn test_resize_can_resize_an_image_with_only_one_dimension_and_preserve_aspect_ratio() {
+    // Arrange
+    let address = spawn_app();
+    let client = reqwest::Client::new();
+    let test_image_one = "https://raw.githubusercontent.com/walterbm/rusty-resizer/main/tests/fixtures/test-image-two.jpg";
+
+    // Act
+    let response = client
+        .get(format!(
+            "{}/resize?source={}&width=1000",
+            address, test_image_one
+        ))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    // Assert
+    assert!(response.status().is_success());
+    assert_eq!(
+        response.headers().get("Content-Type").unwrap(),
+        "image/jpeg",
+        "content type is equal to image/jpeg"
+    );
+    assert_eq!(
+        response.headers().get("Cache-Control").unwrap(),
+        "max-age=3600",
+        "cache control max age is equal to 3600"
+    );
+
+    let bytes = response
+        .bytes()
+        .await
+        .expect("Failed to read response bytes");
+
+    let image = ImageReader::new(Cursor::new(bytes))
+        .with_guessed_format()
+        .unwrap()
+        .decode()
+        .expect("Failed to decode image");
+    let (width, height) = image.dimensions();
+    assert_eq!(width, 1000, "width is equal to 1000px");
+    assert_eq!(height, 750, "height is equal to 750px");
 }

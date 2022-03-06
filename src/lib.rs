@@ -27,8 +27,8 @@ pub struct Configuration {
 #[derive(Deserialize)]
 struct ResizeOptions {
     source: String,
-    height: usize,
-    width: usize,
+    height: Option<usize>,
+    width: Option<usize>,
     quality: Option<u8>,
 }
 
