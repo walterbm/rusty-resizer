@@ -48,6 +48,30 @@ async fn test_resize_returns_error_if_image_source_is_invalid() {
 }
 
 #[actix_rt::test]
+async fn test_resize_returns_error_if_image_host_is_not_allowed() {
+    // Arrange
+    let address = spawn_app();
+    let client = reqwest::Client::new();
+    let test_image_one = "https://content.com/test.jpg";
+
+    // Act
+    let response = client
+        .get(format!(
+            "{}/resize?source={}&width=100&height=100",
+            address, test_image_one
+        ))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    // Assert
+    assert!(response.status().is_client_error());
+
+    let text = response.text().await.expect("Failed to read response text");
+    assert_eq!("Image Host Is Not Allowed", text);
+}
+
+#[actix_rt::test]
 async fn test_resize_can_resize_an_image() {
     // Arrange
     let address = spawn_app();

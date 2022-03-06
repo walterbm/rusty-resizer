@@ -19,9 +19,55 @@ static START: Once = Once::new();
 #[derive(Clone)]
 pub struct Configuration {
     pub env: String,
-    pub allowed_hosts: String,
+    pub allowed_hosts: Vec<String>,
     pub cache_expiration: u64,
     pub default_quality: u8,
+}
+
+impl Configuration {
+    /// Create a new Configuration with default values and correctly transformed options
+    ///
+    /// ```rust
+    /// # use rusty_resizer::Configuration;
+    ///
+    /// let config = Configuration::new(String::from("test"), String::from("  x.com,  y.com,z.com"), None, Some(String::from("50")));
+    ///
+    /// assert_eq!("test", config.env);
+    /// assert_eq!(vec!["x.com","y.com","z.com"], config.allowed_hosts);
+    /// assert_eq!(2880, config.cache_expiration);
+    /// assert_eq!(50, config.default_quality);
+    /// ```
+    pub fn new(
+        env: String,
+        allowed_hosts: String,
+        cache_expiration: Option<String>,
+        default_quality: Option<String>,
+    ) -> Self {
+        let allowed_hosts = allowed_hosts
+            .chars()
+            .filter(|c| !c.is_whitespace())
+            .collect::<String>()
+            .split(',')
+            .map(str::to_string)
+            .collect::<Vec<String>>();
+
+        let cache_expiration: u64 = cache_expiration
+            .unwrap_or_else(|| String::from("2880"))
+            .parse()
+            .unwrap_or(2800);
+
+        let default_quality = default_quality
+            .unwrap_or_else(|| String::from("85"))
+            .parse()
+            .unwrap_or(85);
+
+        Configuration {
+            env,
+            allowed_hosts,
+            cache_expiration,
+            default_quality,
+        }
+    }
 }
 
 #[derive(Deserialize)]

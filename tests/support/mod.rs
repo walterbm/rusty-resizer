@@ -7,7 +7,7 @@ pub fn spawn_app() -> String {
     let port = listener.local_addr().unwrap().port();
     let configuration = Configuration {
         env: String::from("test"),
-        allowed_hosts: String::from("raw.githubusercontent.com"),
+        allowed_hosts: vec![String::from("raw.githubusercontent.com")],
         cache_expiration: 1,
         default_quality: 85,
     };

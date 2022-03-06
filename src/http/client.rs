@@ -8,14 +8,14 @@ use url::Url;
 static USER_AGENT: &str = "rusty-resizer/0.1.0";
 const MAX_ALLOWED_BYTES: usize = 20_000_000;
 
-pub struct Client<'config> {
+pub struct Client<'app> {
     client: ActixWebClient,
     user_agent: &'static str,
-    allowed_hosts: &'config str,
+    allowed_hosts: &'app Vec<String>,
 }
 
-impl<'config> Client<'config> {
-    pub fn new(allowed_hosts: &'config str) -> Self {
+impl<'app> Client<'app> {
+    pub fn new(allowed_hosts: &'app Vec<String>) -> Self {
         let user_agent = USER_AGENT;
         let ssl_builder = SslConnector::builder(SslMethod::tls()).unwrap();
 
@@ -57,7 +57,7 @@ impl<'config> Client<'config> {
 
         let host = url.host_str().unwrap_or("invalid host");
 
-        if self.allowed_hosts.contains(host) {
+        if self.allowed_hosts.contains(&host.to_string()) {
             return Ok(());
         }
 
