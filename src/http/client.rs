@@ -11,11 +11,11 @@ const MAX_ALLOWED_BYTES: usize = 20_000_000;
 pub struct Client<'app> {
     client: ActixWebClient,
     user_agent: &'static str,
-    allowed_hosts: &'app Vec<String>,
+    allowed_hosts: &'app [String],
 }
 
 impl<'app> Client<'app> {
-    pub fn new(allowed_hosts: &'app Vec<String>) -> Self {
+    pub fn new(allowed_hosts: &'app [String]) -> Self {
         let user_agent = USER_AGENT;
         let ssl_builder = SslConnector::builder(SslMethod::tls()).unwrap();
 
