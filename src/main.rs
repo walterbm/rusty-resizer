@@ -11,7 +11,7 @@ async fn main() -> std::io::Result<()> {
     let default_quality = env::var("DEFAULT_QUALITY").ok();
     let cache_expiration = env::var("CACHE_EXPIRATION_HOURS").ok();
     // App Configuration
-    let address = format!("127.0.0.1:{}", port);
+    let address = format!("0.0.0.0:{}", port);
     let listener =
         TcpListener::bind(address).unwrap_or_else(|_| panic!("Failed to bind to port {}", port));
     let configuration = Configuration::new(env, allowed_hosts, cache_expiration, default_quality);
