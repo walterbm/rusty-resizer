@@ -11,8 +11,7 @@ An _experimental_ image resizing http service that wraps [ImageMagick](https://i
 The Rusty Resizer is wrapped in an _extremely_ minimal Docker container (image size is less than < 100MBs) that can be easily mounted as a standalone service:
 
 ```
-docker build rusty-resizer:latest
-docker run -p 8080:8080 --env ALLOWED_HOSTS=raw.githubusercontent.com rusty-resizer
+docker run -p 8080:8080 --envALLOWED_HOSTS=raw.githubusercontent.com ghcr.io/walterbm/rusty-resizer:latest
 ```
 
 ### From Source
@@ -32,13 +31,20 @@ docker run -p 8080:8080 --env ALLOWED_HOSTS=raw.githubusercontent.com rusty-resi
 
 Start the Rusty Resizer server (either through Docker or with Cargo). By default the server will start on port `8080`.
 
+The server only exposes two endpoints:
+
+1. `/resize` to resize images
+2. `/ping` as a health check
+
 Once the server is running images can be dynamically resized through the `/resize` endpoint. For example:
 
 ```sh
 curl localhost:8080/resize?source=image.jpeg&height=100&width=100&quality=85
 ```
 
-For security, and to mitigate some of the worst [vulnerabilities in ImageMagick](https://imagetragick.com/), the Rusty Resizer requires an `$ALLOWED_HOSTS` ENV variable. Only images originating from hosts explicitly listed in `$ALLOWED_HOSTS` will be accepted by the Rusty Resizer. For example to make sure the following request works as expected `ALLOWED_HOSTS` should be set to `raw.githubusercontent.com`:
+For security, and to mitigate some of the worst [vulnerabilities in ImageMagick](https://imagetragick.com/), the Rusty Resizer requires an `$ALLOWED_HOSTS` ENV variable.
+
+Only images originating from hosts explicitly listed in `$ALLOWED_HOSTS` will be accepted by the Rusty Resizer. For example to make sure the following request works as expected `ALLOWED_HOSTS` should be set to `raw.githubusercontent.com`:
 
 ```sh
 curl localhost:8080/resize?source=https://raw.githubusercontent.com/image.jpeg&height=100&width=100&quality=85
