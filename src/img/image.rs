@@ -1,5 +1,6 @@
 use actix_web::web::Bytes;
 use magick_rust::MagickWand;
+use std::cmp;
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
 pub struct Image {
@@ -17,22 +18,26 @@ impl Image {
 
     pub fn resize(&self, width: Option<usize>, height: Option<usize>) {
         let (width, height) = match (width, height) {
-            (Some(width), Some(height)) => (width, height),
-            (Some(width), None) => (
-                width,
-                (self.wand.get_image_height() as f64
-                    * (width as f64 / self.wand.get_image_width() as f64)) as usize,
+            (Some(width), Some(height)) => (
+                cmp::min(width, self.scale_width(height)),
+                cmp::min(height, self.scale_height(width)),
             ),
-            (None, Some(height)) => (
-                (self.wand.get_image_width() as f64
-                    * (height as f64 / self.wand.get_image_height() as f64))
-                    as usize,
-                height,
-            ),
+            (Some(width), None) => (width, self.scale_height(width)),
+            (None, Some(height)) => (self.scale_width(height), height),
             (None, None) => (self.wand.get_image_width(), self.wand.get_image_height()),
         };
 
         self.wand.thumbnail_image(width, height);
+    }
+
+    fn scale_width(&self, height: usize) -> usize {
+        (self.wand.get_image_width() as f64 * (height as f64 / self.wand.get_image_height() as f64))
+            as usize
+    }
+
+    fn scale_height(&self, width: usize) -> usize {
+        (self.wand.get_image_height() as f64 * (width as f64 / self.wand.get_image_width() as f64))
+            as usize
     }
 
     pub fn to_buffer_mut(&mut self, quality: u8) -> Result<Vec<u8>, ImageError> {
