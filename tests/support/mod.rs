@@ -1,5 +1,6 @@
 use std::net::TcpListener;
 
+use cadence::{NopMetricSink, StatsdClient};
 use rusty_resizer::Configuration;
 
 pub fn spawn_app() -> String {
@@ -11,7 +12,9 @@ pub fn spawn_app() -> String {
         cache_expiration: 1,
         default_quality: 85,
     };
-    let server = rusty_resizer::run(listener, configuration).expect("Failed to bind address");
+    let statsd = StatsdClient::from_sink("rusty.resizer", NopMetricSink);
+    let server =
+        rusty_resizer::run(listener, configuration, statsd).expect("Failed to bind address");
 
     let _ = tokio::spawn(server);
 

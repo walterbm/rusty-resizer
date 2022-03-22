@@ -1,6 +1,8 @@
+use cadence::{NopMetricSink, StatsdClient, UdpMetricSink, DEFAULT_PORT};
 use rusty_resizer::{run, Configuration};
 use std::env;
 use std::net::TcpListener;
+use std::net::UdpSocket;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -10,13 +12,27 @@ async fn main() -> std::io::Result<()> {
     let allowed_hosts = env::var("ALLOWED_HOSTS").expect("ALLOWED_HOSTS must be set!");
     let default_quality = env::var("DEFAULT_QUALITY").ok();
     let cache_expiration = env::var("CACHE_EXPIRATION_HOURS").ok();
+    let statsd_host = env::var("STATSD_HOST").ok();
     // App Configuration
     let address = format!("0.0.0.0:{}", port);
     let listener =
-        TcpListener::bind(address).unwrap_or_else(|_| panic!("Failed to bind to port {}", port));
+        TcpListener::bind(address).unwrap_or_else(|_| panic!("Failed to bind to port {}!", port));
     let configuration = Configuration::new(env, allowed_hosts, cache_expiration, default_quality);
     // Logging
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+    // Metrics
+    let statsd = match statsd_host {
+        Some(statsd_host) => {
+            let socket = UdpSocket::bind("0.0.0.0:0").expect("Failed to bind to UDP socket!");
+            socket
+                .set_nonblocking(true)
+                .expect("Failed to set UDP socket as non-blocking!");
+            let sink = UdpMetricSink::from((statsd_host, DEFAULT_PORT), socket)
+                .expect("Failed to bind to UDP port!");
+            StatsdClient::from_sink("rusty.resizer", sink)
+        }
+        None => (StatsdClient::from_sink("rusty.resizer", NopMetricSink)),
+    };
     // Start
-    run(listener, configuration)?.await
+    run(listener, configuration, statsd)?.await
 }

@@ -14,8 +14,10 @@ name = "rusty_resizer"
 [dependencies]
 actix-http = "3.0.1"
 actix-web = "4.0.1"
-awc = { version = "=3.0.0-beta.21", features = ["openssl"] }
+awc = { version = "3.0.0", features = ["openssl"] }
+cadence = "0.28.0"
 env_logger = "0.9.0"
+futures-util = "0.3.21"
 httpdate = "1.0.1"
 log = "0.4.14"
 magick_rust = { git = "https://github.com/nlfiedler/magick-rust", branch = "master", features = ["disable-hdri"] }

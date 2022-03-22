@@ -2,14 +2,18 @@ extern crate log;
 
 use actix_web::dev::Server;
 use actix_web::web::Data;
-use actix_web::{error, middleware::Logger, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{
+    dev::Service as _, error, middleware::Logger, web, App, HttpResponse, HttpServer, Responder,
+};
+use cadence::{CountedExt, StatsdClient, Timed};
+use futures_util::future::FutureExt;
 use http::Client;
 use img::{Image, ImageError};
 use magick_rust::magick_wand_genesis;
 use serde::Deserialize;
 use std::net::TcpListener;
-use std::sync::Once;
-use std::time::{Duration, SystemTime};
+use std::sync::{Arc, Once};
+use std::time::{Duration, Instant, SystemTime};
 
 mod http;
 mod img;
@@ -141,15 +145,44 @@ pub async fn ping() -> impl Responder {
     HttpResponse::Ok().body("pong")
 }
 
-pub fn run(listener: TcpListener, configuration: Configuration) -> Result<Server, std::io::Error> {
+pub fn run(
+    listener: TcpListener,
+    configuration: Configuration,
+    statsd: StatsdClient,
+) -> Result<Server, std::io::Error> {
     START.call_once(|| {
         magick_wand_genesis();
     });
 
     let configuration = Data::new(configuration);
 
+    let statsd = Arc::new(statsd);
+
     let server = HttpServer::new(move || {
+        let statsd = statsd.clone();
         App::new()
+            .wrap_fn(move |req, srv| {
+                let statsd = statsd.clone();
+                let now = Instant::now();
+
+                srv.call(req).map(move |res| {
+                    match &res {
+                        Ok(res) => {
+                            let key = format!(
+                                "{}.{}",
+                                res.request().path().replace('/', ""),
+                                res.response().status().as_u16()
+                            );
+                            statsd.time(&key, now.elapsed()).ok();
+                        }
+                        Err(_) => {
+                            statsd.incr("unknown.error").ok();
+                        }
+                    }
+
+                    res
+                })
+            })
             .wrap(Logger::default())
             .route("/ping", web::get().to(ping))
             .route("/resize", web::get().to(resize))

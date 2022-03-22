@@ -5,7 +5,7 @@ use openssl::ssl::{SslConnector, SslMethod};
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use url::Url;
 
-static USER_AGENT: &str = "rusty-resizer/0.1.0";
+static USER_AGENT: &str = "rusty-resizer";
 const MAX_ALLOWED_BYTES: usize = 20_000_000;
 
 pub struct Client<'app> {
