@@ -168,12 +168,13 @@ pub fn run(
                 srv.call(req).map(move |res| {
                     match &res {
                         Ok(res) => {
-                            let key = format!(
-                                "{}.{}",
-                                res.request().path().replace('/', ""),
-                                res.response().status().as_u16()
-                            );
-                            statsd.time(&key, now.elapsed()).ok();
+                            if res.request().path() == "/resize" {
+                                statsd
+                                    .time_with_tags("resize", now.elapsed())
+                                    .with_tag("status", res.response().status().as_str())
+                                    .try_send()
+                                    .ok();
+                            }
                         }
                         Err(_) => {
                             statsd.incr("unknown.error").ok();
@@ -183,7 +184,7 @@ pub fn run(
                     res
                 })
             })
-            .wrap(Logger::default())
+            .wrap(Logger::default().exclude("/ping"))
             .route("/ping", web::get().to(ping))
             .route("/resize", web::get().to(resize))
             .app_data(configuration.clone())
