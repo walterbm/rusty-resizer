@@ -9,6 +9,10 @@ async fn main() -> std::io::Result<()> {
     // ENV vars
     let port = env::var("PORT").unwrap_or_else(|_| String::from("8080"));
     let env = env::var("ENV").unwrap_or_else(|_| String::from("local"));
+    let workers = env::var("WORKERS")
+        .ok()
+        .and_then(|workers| workers.parse::<usize>().ok())
+        .unwrap_or(4);
     let allowed_hosts = env::var("ALLOWED_HOSTS").expect("ALLOWED_HOSTS must be set!");
     let default_quality = env::var("DEFAULT_QUALITY").ok();
     let cache_expiration = env::var("CACHE_EXPIRATION_HOURS").ok();
@@ -34,5 +38,5 @@ async fn main() -> std::io::Result<()> {
         None => (StatsdClient::from_sink("rusty.resizer", NopMetricSink)),
     };
     // Start
-    run(listener, configuration, statsd)?.await
+    run(listener, configuration, statsd, workers)?.await
 }

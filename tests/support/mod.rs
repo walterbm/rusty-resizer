@@ -13,8 +13,9 @@ pub fn spawn_app() -> String {
         default_quality: 85,
     };
     let statsd = StatsdClient::from_sink("rusty.resizer", NopMetricSink);
-    let server =
-        rusty_resizer::run(listener, configuration, statsd).expect("Failed to bind address");
+    let workers = 1;
+    let server = rusty_resizer::run(listener, configuration, statsd, workers)
+        .expect("Failed to bind address");
 
     let _ = tokio::spawn(server);
 

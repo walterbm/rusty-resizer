@@ -149,6 +149,7 @@ pub fn run(
     listener: TcpListener,
     configuration: Configuration,
     statsd: StatsdClient,
+    workers: usize,
 ) -> Result<Server, std::io::Error> {
     START.call_once(|| {
         magick_wand_genesis();
@@ -190,6 +191,7 @@ pub fn run(
             .app_data(configuration.clone())
     })
     .listen(listener)?
+    .workers(workers)
     .run();
 
     Ok(server)
