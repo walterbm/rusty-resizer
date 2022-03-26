@@ -42,6 +42,28 @@ Once the server is running images can be dynamically resized through the `/resiz
 curl localhost:8080/resize?source=image.jpeg&height=100&width=100&quality=85
 ```
 
+`/resize` accepts four query parameters:
+
+- `source`: **required** to specify the full url of the target image
+- `height` & `width`: the resized image's dimensions (if `height` or `width` are included alone the other dimension is computed to preserve the aspect ratio)
+- `quality` to set the compression quality for image formats that accept compression (e.g. jpeg)
+
+## Configuration
+
+The Rusty Resizer accepts all its configuration options through ENV variables:
+
+| ENV var                  | description                                                                       | default      |
+| ------------------------ | --------------------------------------------------------------------------------- | ------------ |
+| `ALLOWED_HOSTS`          | list of image hosts that will be accepted for resizing                            |              |
+| `DEFAULT_QUALITY`        | default compression quality for image formats that accept compression (e.g. jpeg) | 85           |
+| `CACHE_EXPIRATION_HOURS` | used to populate the Cache-Control max-age headers in the final resized response  | 2880 seconds |
+| `STATSD_HOST`            | StatsD host to accept metric data (metrics are only emitted when this is present) |              |
+| `WORKERS`                | number of HTTP workers                                                            | 4            |
+| `PORT`                   | TCP port to bind the server                                                       | 8080         |
+| `ENV`                    | environment the server is running in                                              | local        |
+
+## Security
+
 For security, and to mitigate some of the worst [vulnerabilities in ImageMagick](https://imagetragick.com/), the Rusty Resizer requires an `$ALLOWED_HOSTS` ENV variable.
 
 Only images originating from hosts explicitly listed in `$ALLOWED_HOSTS` will be accepted by the Rusty Resizer. For example to make sure the following request works as expected `ALLOWED_HOSTS` should be set to `raw.githubusercontent.com`:
