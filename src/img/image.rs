@@ -27,7 +27,9 @@ impl Image {
             (None, None) => (self.wand.get_image_width(), self.wand.get_image_height()),
         };
 
-        self.wand.thumbnail_image(width, height);
+        if !(width == self.wand.get_image_width() && height == self.wand.get_image_height()) {
+            self.wand.thumbnail_image(width, height);
+        }
     }
 
     fn scale_width(&self, height: usize) -> usize {

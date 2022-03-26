@@ -205,3 +205,48 @@ async fn test_resize_can_resize_an_image_with_one_outsized_dimension_and_preserv
     assert_eq!(width, 1000, "width is equal to 1000px");
     assert_eq!(height, 750, "height is equal to 750px");
 }
+
+#[actix_rt::test]
+async fn test_resize_will_noop_if_target_dimensions_are_the_same_as_target_image() {
+    // Arrange
+    let address = spawn_app();
+    let client = reqwest::Client::new();
+    let test_image_one = "https://raw.githubusercontent.com/walterbm/rusty-resizer/main/tests/fixtures/test-image-one.jpg";
+
+    // Act
+    let response = client
+        .get(format!(
+            "{}/resize?source={}&width=2250&height=2250",
+            address, test_image_one
+        ))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    // Assert
+    assert!(response.status().is_success());
+    assert_eq!(
+        response.headers().get("Content-Type").unwrap(),
+        "image/jpeg",
+        "content type is equal to image/jpeg"
+    );
+    assert_eq!(
+        response.headers().get("Cache-Control").unwrap(),
+        "max-age=3600",
+        "cache control max age is equal to 3600"
+    );
+
+    let bytes = response
+        .bytes()
+        .await
+        .expect("Failed to read response bytes");
+
+    let image = ImageReader::new(Cursor::new(bytes))
+        .with_guessed_format()
+        .unwrap()
+        .decode()
+        .expect("Failed to decode image");
+    let (width, height) = image.dimensions();
+    assert_eq!(width, 2250, "width is equal to 2250px");
+    assert_eq!(height, 2250, "height is equal to 2250px");
+}
