@@ -77,8 +77,8 @@ impl Configuration {
 #[derive(Deserialize)]
 struct ResizeOptions {
     source: String,
-    height: Option<usize>,
-    width: Option<usize>,
+    height: Option<f32>,
+    width: Option<f32>,
     quality: Option<u8>,
 }
 
@@ -105,7 +105,10 @@ async fn resize<'app>(
         Ok(response) => {
             let mut image = Image::from_bytes(&response)?;
 
-            image.resize(options.width, options.height);
+            image.resize(
+                options.width.map(|f| f.round() as usize),
+                options.height.map(|f| f.round() as usize),
+            );
 
             let buffer =
                 image.to_buffer_mut(options.quality.unwrap_or(configuration.default_quality))?;
