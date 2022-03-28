@@ -1,5 +1,3 @@
-extern crate log;
-
 use actix_web::dev::Server;
 use actix_web::web::Data;
 use actix_web::{
@@ -47,6 +45,8 @@ impl Configuration {
         cache_expiration: Option<String>,
         default_quality: Option<String>,
     ) -> Self {
+        // I see two collect calls in one chain and that sets off alarms on efficiency.
+        // Since this is not a critical part of the code for optimization, I wouldn't worry.
         let allowed_hosts = allowed_hosts
             .chars()
             .filter(|c| !c.is_whitespace())
@@ -55,15 +55,20 @@ impl Configuration {
             .map(str::to_string)
             .collect::<Vec<String>>();
 
+        // I noticed you use a different approach with cache expiration and default quality.
+        // You take in an option and do the defaulting in the run function instead of like
+        // the others where you do the defaulting in main and send a non-Option value as
+        // the arguments to run. Up to you, but I think the approach of doing the optional
+        // unwrapping and defaulting in main makes the intent more obvious and erases the
+        // Option wrapper type from the run function signature.
         let cache_expiration: u64 = cache_expiration
-            .unwrap_or_else(|| String::from("2880"))
-            .parse()
-            .unwrap_or(2800);
+            .and_then(|ce| ce.parse::<u64>().ok())
+            // Did you mean to provide both 2800 and 2880 or just one?
+            .unwrap_or(2800u64);
 
         let default_quality = default_quality
-            .unwrap_or_else(|| String::from("85"))
-            .parse()
-            .unwrap_or(85);
+            .and_then(|dq| dq.parse::<u8>().ok())
+            .unwrap_or(85u8);
 
         Configuration {
             env,
@@ -76,6 +81,9 @@ impl Configuration {
 
 #[derive(Deserialize)]
 struct ResizeOptions {
+    // This might be better typed as a more concrete type instead of any string.
+    // It's the source for client - what are client's type constraints? If the String
+    // is an invalid URI wouldn't this fail at runtime?
     source: String,
     height: Option<f32>,
     width: Option<f32>,
@@ -93,7 +101,7 @@ struct ResizeOptions {
 /// Example request:
 ///  resize?source=url.jpeg&height=500&width=500&max_quality=85
 ///
-async fn resize<'app>(
+async fn resize(
     options: web::Query<ResizeOptions>,
     configuration: web::Data<Configuration>,
 ) -> Result<HttpResponse, ImageError> {
@@ -154,18 +162,24 @@ pub fn run(
     statsd: StatsdClient,
     workers: usize,
 ) -> Result<Server, std::io::Error> {
+    // Curious why you needed to use a Once synchronization for initialization
     START.call_once(|| {
         magick_wand_genesis();
     });
 
     let configuration = Data::new(configuration);
 
+    // I don't understand why moving this value into the closure without being
+    // clonable is a problem since you have no intent to use this reference
+    // again. It is correct, but I don't understand why.
+    // Did you ever learn why you had to use an Arc here? I see you keep moving the statsd value.
+    // I wonder if this API is only intended for values that could be taken ownership of? If so,
+    // maybe the intent is to provide a client like statsd through that interface? Like app_data?
     let statsd = Arc::new(statsd);
-
     let server = HttpServer::new(move || {
         let statsd = statsd.clone();
         App::new()
-            .wrap_fn(move |req, srv| {
+            .wrap_fn(move|req, srv| {
                 let statsd = statsd.clone();
                 let now = Instant::now();
 

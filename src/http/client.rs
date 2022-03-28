@@ -11,6 +11,7 @@ const MAX_ALLOWED_BYTES: usize = 20_000_000;
 pub struct Client<'app> {
     client: ActixWebClient,
     user_agent: &'static str,
+    // Why did you decide to borrow here instead of own. Was it to avoid copying?
     allowed_hosts: &'app [String],
 }
 
@@ -57,6 +58,11 @@ impl<'app> Client<'app> {
 
         let host = url.host_str().unwrap_or("invalid host");
 
+        // You have logic in your initialization to ensure that the allowed_hosts are valid.
+        // I would constrain this type further so that you couldn't in code write something like
+        // let a = vec!["invalid host".to_string()];
+        // let c = Client::new(&a);
+        // let b = c.allowed_hosts.contains(&a.get(1).unwrap().clone());
         if self.allowed_hosts.contains(&host.to_string()) {
             return Ok(());
         }

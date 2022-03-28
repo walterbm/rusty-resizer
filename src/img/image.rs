@@ -32,6 +32,18 @@ impl Image {
         }
     }
 
+    // In these calculations are you computing with precision, but tossing
+    // the decimal portion when converting to usize? Just making sure that
+    // you want this to be the case:
+    // let a = 1000.59283191_f64;
+    // let b = a as usize;
+    // println!("a {}, b {}", a, b);
+    // stdout: a 1000.59283191, b 1000
+    // It makes sense to want an integer based on the API. But I also noticed
+    // you also convert from float to a rounded f32 when passing the value as
+    // an option to resize(). I don't understand what the intent is since it
+    // looks like options allows floats, but you only do integer math internally.
+    // Why support floats at all?
     fn scale_width(&self, height: usize) -> usize {
         (self.wand.get_image_width() as f64 * (height as f64 / self.wand.get_image_height() as f64))
             as usize

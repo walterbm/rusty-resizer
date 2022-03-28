@@ -7,8 +7,9 @@ use std::net::UdpSocket;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // ENV vars
-    let port = env::var("PORT").unwrap_or_else(|_| String::from("8080"));
-    let env = env::var("ENV").unwrap_or_else(|_| String::from("local"));
+    let port = env::var("PORT").unwrap_or( String::from("8080"));
+    let env = env::var("ENV").unwrap_or( String::from("local"));
+    // I always find it annoying that Result is so strict about the Error type, but its right to be that way. If you want to manage the possible VarError cases differently, you can create a custom wrapper error type and use map_err to have the Result E types coalesce.
     let workers = env::var("WORKERS")
         .ok()
         .and_then(|workers| workers.parse::<usize>().ok())
@@ -20,9 +21,10 @@ async fn main() -> std::io::Result<()> {
     // App Configuration
     let address = format!("0.0.0.0:{}", port);
     let listener =
-        TcpListener::bind(address).unwrap_or_else(|_| panic!("Failed to bind to port {}!", port));
+        TcpListener::bind(address).expect(&format!("Failed to bind to port {}!", port));
     let configuration = Configuration::new(env, allowed_hosts, cache_expiration, default_quality);
-    // Logging
+    // Logging (Not necessary, but helpful to readers to see a use statement for env_logger so they know "where the module comes from")
+    use env_logger;
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     // Metrics
     let statsd = match statsd_host {
