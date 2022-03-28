@@ -2,13 +2,13 @@
 
 ## About
 
-An _experimental_ image resizing http service that wraps [ImageMagick](https://imagemagick.org) to provide safe & accurate dynamic image resizing. The best way to utilize the Rusty Resizer is through a Docker container.
+An _experimental_ image resizing http service that wraps [ImageMagick](https://imagemagick.org) to provide safe & accurate dynamic image resizing. The best way to utilize the Rusty Resizer is through a Docker container and behind a CDN.
 
 ## Building
 
 ### From Docker Image
 
-The Rusty Resizer is wrapped in an _extremely_ minimal Docker container (image size is less than < 100MBs) that can be easily mounted as a standalone service:
+The Rusty Resizer is wrapped in a minimal Docker container (image size is less than < 100MBs) that can be easily mounted as a standalone service:
 
 ```
 docker run -p 8080:8080 --envALLOWED_HOSTS=raw.githubusercontent.com ghcr.io/walterbm/rusty-resizer:latest
@@ -45,22 +45,22 @@ curl localhost:8080/resize?source=image.jpeg&height=100&width=100&quality=85
 `/resize` accepts four query parameters:
 
 - `source`: **required** to specify the full url of the target image
-- `height` & `width`: the resized image's dimensions (if `height` or `width` are included alone the other dimension is computed to preserve the aspect ratio)
-- `quality` to set the compression quality for image formats that accept compression (e.g. jpeg)
+- `height` & `width`: the resized image's dimensions (if `height` or `width` are alone the other dimension is computed to preserve the aspect ratio)
+- `quality`: optionally set the compression quality for image formats that accept compression (e.g. jpeg)
 
 ## Configuration
 
 The Rusty Resizer accepts all its configuration options through ENV variables:
 
-| ENV var                  | description                                                                       | default      |
-| ------------------------ | --------------------------------------------------------------------------------- | ------------ |
-| `ALLOWED_HOSTS`          | list of image hosts that will be accepted for resizing                            |              |
-| `DEFAULT_QUALITY`        | default compression quality for image formats that accept compression (e.g. jpeg) | 85           |
-| `CACHE_EXPIRATION_HOURS` | used to populate the Cache-Control max-age headers in the final resized response  | 2880 seconds |
-| `STATSD_HOST`            | StatsD host to accept metric data (metrics are only emitted when this is present) |              |
-| `WORKERS`                | number of HTTP workers                                                            | 4            |
-| `PORT`                   | TCP port to bind the server                                                       | 8080         |
-| `ENV`                    | environment the server is running in                                              | local        |
+| ENV var                  | description                                                                       | default    |
+| ------------------------ | --------------------------------------------------------------------------------- | ---------- |
+| `ALLOWED_HOSTS`          | **required** list of image hosts that will be accepted for resizing               |            |
+| `DEFAULT_QUALITY`        | default compression quality for image formats that accept compression (e.g. jpeg) | 85         |
+| `CACHE_EXPIRATION_HOURS` | used to populate the Cache-Control max-age headers in the final resized response  | 2880 hours |
+| `STATSD_HOST`            | StatsD host to accept metric data (metrics are only emitted when this is present) |            |
+| `WORKERS`                | number of HTTP workers                                                            | 4          |
+| `PORT`                   | TCP port to bind the server                                                       | 8080       |
+| `ENV`                    | environment the server is running in                                              | local      |
 
 ## Security
 
@@ -69,8 +69,12 @@ For security, and to mitigate some of the worst [vulnerabilities in ImageMagick]
 Only images originating from hosts explicitly listed in `$ALLOWED_HOSTS` will be accepted by the Rusty Resizer. For example to make sure the following request works as expected `ALLOWED_HOSTS` should be set to `raw.githubusercontent.com`:
 
 ```sh
-curl localhost:8080/resize?source=https://raw.githubusercontent.com/image.jpeg&height=100&width=100&quality=85
+curl localhost:8080/resize?source=https://raw.githubusercontent.com/image.jpeg&height=100&width=100
 ```
+
+## Deployment
+
+For best results deploy the Rusty Resizer behind a CDN to help amortize the cost of resizing an image. If the CDN respects standard cache headers the cache time for the the resized images can be controlled through the `CACHE_EXPIRATION_HOURS` ENV option.
 
 ## Test
 
