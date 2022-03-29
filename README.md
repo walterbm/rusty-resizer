@@ -1,5 +1,7 @@
 # Rusty Resizer
 
+![CI](https://github.com/walterbm/rusty-resizer/actions/workflows/ci.yml/badge.svg)
+
 ## About
 
 An _experimental_ image resizing http service that wraps [ImageMagick](https://imagemagick.org) to provide safe & accurate dynamic image resizing. The best way to utilize the Rusty Resizer is through a Docker container and behind a CDN.
