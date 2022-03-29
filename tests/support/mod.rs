@@ -2,13 +2,14 @@ use std::net::TcpListener;
 
 use cadence::{NopMetricSink, StatsdClient};
 use rusty_resizer::Configuration;
+use url::Host;
 
 pub fn spawn_app() -> String {
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind to random system port");
     let port = listener.local_addr().unwrap().port();
     let configuration = Configuration {
         env: String::from("test"),
-        allowed_hosts: vec![String::from("raw.githubusercontent.com")],
+        allowed_hosts: vec![Host::parse("raw.githubusercontent.com").unwrap()],
         cache_expiration: 1,
         default_quality: 85,
     };

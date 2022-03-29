@@ -33,6 +33,7 @@ async fn main() -> std::io::Result<()> {
         TcpListener::bind(address).unwrap_or_else(|_| panic!("Failed to bind to port {}!", port));
     let configuration = Configuration::new(env, allowed_hosts, cache_expiration, default_quality);
     // Logging
+    use env_logger;
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     // Metrics
     let statsd = match statsd_host {

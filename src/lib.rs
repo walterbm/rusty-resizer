@@ -14,6 +14,7 @@ use serde::Deserialize;
 use std::net::TcpListener;
 use std::sync::{Arc, Once};
 use std::time::{Duration, Instant, SystemTime};
+use url::Host;
 
 mod http;
 mod img;
@@ -23,7 +24,7 @@ static START: Once = Once::new();
 #[derive(Clone)]
 pub struct Configuration {
     pub env: String,
-    pub allowed_hosts: Vec<String>,
+    pub allowed_hosts: Vec<Host>,
     pub cache_expiration: u64,
     pub default_quality: u8,
 }
@@ -32,12 +33,13 @@ impl Configuration {
     /// Create a new Configuration with default values and correctly transformed options
     ///
     /// ```rust
+    /// # use url::Host;
     /// # use rusty_resizer::Configuration;
     ///
     /// let config = Configuration::new(String::from("test"), String::from("  x.com,  y.com,z.com"), 2880, 50);
     ///
     /// assert_eq!("test", config.env);
-    /// assert_eq!(vec!["x.com","y.com","z.com"], config.allowed_hosts);
+    /// assert_eq!(vec![Host::parse("x.com").unwrap(), Host::parse("y.com").unwrap(), Host::parse("z.com").unwrap()], config.allowed_hosts);
     /// assert_eq!(2880, config.cache_expiration);
     /// assert_eq!(50, config.default_quality);
     /// ```
@@ -53,7 +55,8 @@ impl Configuration {
             .collect::<String>()
             .split(',')
             .map(str::to_string)
-            .collect::<Vec<String>>();
+            .filter_map(|s| Host::parse(&s).ok())
+            .collect::<Vec<Host>>();
 
         Configuration {
             env,

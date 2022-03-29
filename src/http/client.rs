@@ -3,7 +3,7 @@ use actix_web::web::Bytes;
 use awc::{Client as ActixWebClient, Connector};
 use openssl::ssl::{SslConnector, SslMethod};
 use std::fmt::{Display, Formatter, Result as FmtResult};
-use url::Url;
+use url::{Host, Url};
 
 static USER_AGENT: &str = "rusty-resizer";
 const MAX_ALLOWED_BYTES: usize = 20_000_000;
@@ -11,11 +11,11 @@ const MAX_ALLOWED_BYTES: usize = 20_000_000;
 pub struct Client<'app> {
     client: ActixWebClient,
     user_agent: &'static str,
-    allowed_hosts: &'app [String],
+    allowed_hosts: &'app [Host],
 }
 
 impl<'app> Client<'app> {
-    pub fn new(allowed_hosts: &'app [String]) -> Self {
+    pub fn new(allowed_hosts: &'app [Host]) -> Self {
         let user_agent = USER_AGENT;
         let ssl_builder = SslConnector::builder(SslMethod::tls()).unwrap();
 
@@ -54,10 +54,9 @@ impl<'app> Client<'app> {
 
     fn validate_host(&self, url: &str) -> Result<(), ClientError> {
         let url = Url::parse(url).map_err(|_| ClientError::InvalidRequest)?;
+        let host = url.host().ok_or(ClientError::InvalidRequest)?;
 
-        let host = url.host_str().unwrap_or("invalid host");
-
-        if self.allowed_hosts.contains(&host.to_string()) {
+        if self.allowed_hosts.contains(&host.to_owned()) {
             return Ok(());
         }
 
