@@ -4,18 +4,28 @@ use std::env;
 use std::net::TcpListener;
 use std::net::UdpSocket;
 
+const DEFAULT_WORKERS: usize = 4;
+const DEFAULT_QUALITY: u8 = 85;
+const DEFAULT_CACHE_EXPIRATION_HOURS: u64 = 2880;
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // ENV vars
     let port = env::var("PORT").unwrap_or_else(|_| String::from("8080"));
     let env = env::var("ENV").unwrap_or_else(|_| String::from("local"));
+    let allowed_hosts = env::var("ALLOWED_HOSTS").expect("ALLOWED_HOSTS must be set!");
     let workers = env::var("WORKERS")
         .ok()
         .and_then(|workers| workers.parse::<usize>().ok())
-        .unwrap_or(4);
-    let allowed_hosts = env::var("ALLOWED_HOSTS").expect("ALLOWED_HOSTS must be set!");
-    let default_quality = env::var("DEFAULT_QUALITY").ok();
-    let cache_expiration = env::var("CACHE_EXPIRATION_HOURS").ok();
+        .unwrap_or(DEFAULT_WORKERS);
+    let default_quality = env::var("DEFAULT_QUALITY")
+        .ok()
+        .and_then(|dq| dq.parse::<u8>().ok())
+        .unwrap_or(DEFAULT_QUALITY);
+    let cache_expiration = env::var("CACHE_EXPIRATION_HOURS")
+        .ok()
+        .and_then(|ce| ce.parse::<u64>().ok())
+        .unwrap_or(DEFAULT_CACHE_EXPIRATION_HOURS);
     let statsd_host = env::var("STATSD_HOST").ok();
     // App Configuration
     let address = format!("0.0.0.0:{}", port);

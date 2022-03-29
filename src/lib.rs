@@ -34,7 +34,7 @@ impl Configuration {
     /// ```rust
     /// # use rusty_resizer::Configuration;
     ///
-    /// let config = Configuration::new(String::from("test"), String::from("  x.com,  y.com,z.com"), None, Some(String::from("50")));
+    /// let config = Configuration::new(String::from("test"), String::from("  x.com,  y.com,z.com"), 2880, 50);
     ///
     /// assert_eq!("test", config.env);
     /// assert_eq!(vec!["x.com","y.com","z.com"], config.allowed_hosts);
@@ -44,8 +44,8 @@ impl Configuration {
     pub fn new(
         env: String,
         allowed_hosts: String,
-        cache_expiration: Option<String>,
-        default_quality: Option<String>,
+        cache_expiration: u64,
+        default_quality: u8,
     ) -> Self {
         let allowed_hosts = allowed_hosts
             .chars()
@@ -54,16 +54,6 @@ impl Configuration {
             .split(',')
             .map(str::to_string)
             .collect::<Vec<String>>();
-
-        let cache_expiration: u64 = cache_expiration
-            .unwrap_or_else(|| String::from("2880"))
-            .parse()
-            .unwrap_or(2800);
-
-        let default_quality = default_quality
-            .unwrap_or_else(|| String::from("85"))
-            .parse()
-            .unwrap_or(85);
 
         Configuration {
             env,
@@ -93,7 +83,7 @@ struct ResizeOptions {
 /// Example request:
 ///  resize?source=url.jpeg&height=500&width=500&max_quality=85
 ///
-async fn resize<'app>(
+async fn resize(
     options: web::Query<ResizeOptions>,
     configuration: web::Data<Configuration>,
 ) -> Result<HttpResponse, ImageError> {
