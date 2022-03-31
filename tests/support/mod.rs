@@ -11,6 +11,7 @@ pub fn spawn_app() -> String {
         env: String::from("test"),
         allowed_hosts: vec![Host::parse("raw.githubusercontent.com").unwrap()],
         cache_expiration: 1,
+        cache_jitter: 0,
         default_quality: 85,
     };
     let statsd = StatsdClient::from_sink("rusty.resizer", NopMetricSink);

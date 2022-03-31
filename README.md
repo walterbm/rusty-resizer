@@ -54,15 +54,16 @@ curl localhost:8080/resize?source=image.jpeg&height=100&width=100&quality=85
 
 The Rusty Resizer accepts all its configuration options through ENV variables:
 
-| ENV var                  | description                                                                       | default    |
-| ------------------------ | --------------------------------------------------------------------------------- | ---------- |
-| `ALLOWED_HOSTS`          | **required** list of image hosts that will be accepted for resizing               |            |
-| `DEFAULT_QUALITY`        | default compression quality for image formats that accept compression (e.g. jpeg) | 85         |
-| `CACHE_EXPIRATION_HOURS` | used to populate the Cache-Control max-age headers in the final resized response  | 2880 hours |
-| `STATSD_HOST`            | StatsD host to accept metric data (metrics are only emitted when this is present) |            |
-| `WORKERS`                | number of HTTP workers                                                            | 4          |
-| `PORT`                   | TCP port to bind the server                                                       | 8080       |
-| `ENV`                    | environment the server is running in                                              | local      |
+| ENV var                  | description                                                                            | default    |
+| ------------------------ | -------------------------------------------------------------------------------------- | ---------- |
+| `ALLOWED_HOSTS`          | **required** list of image hosts that will be accepted for resizing                    |            |
+| `DEFAULT_QUALITY`        | default compression quality for image formats that accept compression (e.g. jpeg)      | 85         |
+| `CACHE_EXPIRATION_HOURS` | use to populate `Cache-Control` & `Expires` headers in the final resized response      | 2880 hours |
+| `CACHE_JITTER_SECONDS`   | help give `Cache-Control` & `Expires` headers some variance to avoid a thundering herd | 0          |
+| `STATSD_HOST`            | StatsD host to accept metric data (metrics are only emitted when this is present)      |            |
+| `WORKERS`                | number of HTTP workers                                                                 | 4          |
+| `PORT`                   | TCP port to bind the server                                                            | 8080       |
+| `ENV`                    | environment the server is running in                                                   | local      |
 
 ## Security
 

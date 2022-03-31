@@ -10,6 +10,7 @@ use futures_util::future::FutureExt;
 use http::Client;
 use img::{Image, ImageError};
 use magick_rust::magick_wand_genesis;
+use rand::Rng;
 use serde::Deserialize;
 use std::net::TcpListener;
 use std::sync::{Arc, Once};
@@ -26,6 +27,7 @@ pub struct Configuration {
     pub env: String,
     pub allowed_hosts: Vec<Host>,
     pub cache_expiration: u64,
+    pub cache_jitter: u64,
     pub default_quality: u8,
 }
 
@@ -36,17 +38,19 @@ impl Configuration {
     /// # use url::Host;
     /// # use rusty_resizer::Configuration;
     ///
-    /// let config = Configuration::new(String::from("test"), String::from("  x.com,  y.com,z.com"), 2880, 50);
+    /// let config = Configuration::new(String::from("test"), String::from("  x.com,  y.com,z.com"), 2880, 60, 50);
     ///
     /// assert_eq!("test", config.env);
     /// assert_eq!(vec![Host::parse("x.com").unwrap(), Host::parse("y.com").unwrap(), Host::parse("z.com").unwrap()], config.allowed_hosts);
     /// assert_eq!(2880, config.cache_expiration);
+    /// assert_eq!(60, config.cache_jitter);
     /// assert_eq!(50, config.default_quality);
     /// ```
     pub fn new(
         env: String,
         allowed_hosts: String,
         cache_expiration: u64,
+        cache_jitter: u64,
         default_quality: u8,
     ) -> Self {
         let allowed_hosts = allowed_hosts
@@ -62,6 +66,7 @@ impl Configuration {
             env,
             allowed_hosts,
             cache_expiration,
+            cache_jitter,
             default_quality,
         }
     }
@@ -109,7 +114,12 @@ async fn resize(
             let content_type = image.mime_type()?;
 
             let now = SystemTime::now();
-            let expire_time_in_seconds = configuration.cache_expiration * 60 * 60;
+            let jitter = if configuration.cache_jitter > 0 {
+                rand::thread_rng().gen_range(0..configuration.cache_jitter)
+            } else {
+                0
+            };
+            let expire_time_in_seconds = configuration.cache_expiration * 60 * 60 + jitter;
 
             let response = HttpResponse::Ok()
                 .content_type(content_type)

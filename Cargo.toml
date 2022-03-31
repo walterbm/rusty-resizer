@@ -22,6 +22,7 @@ httpdate = "1.0.2"
 log = "0.4.16"
 magick_rust = { git = "https://github.com/nlfiedler/magick-rust", branch = "master", features = ["disable-hdri"] }
 openssl = "0.10.38"
+rand = "0.8.5"
 serde = { version = "1.0.136", features = ["derive"] }
 url = "2.2.2"
 

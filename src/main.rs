@@ -7,6 +7,7 @@ use std::net::UdpSocket;
 const DEFAULT_WORKERS: usize = 4;
 const DEFAULT_QUALITY: u8 = 85;
 const DEFAULT_CACHE_EXPIRATION_HOURS: u64 = 2880;
+const DEFAULT_CACHE_JITTER_SECONDS: u64 = 0;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -26,12 +27,22 @@ async fn main() -> std::io::Result<()> {
         .ok()
         .and_then(|ce| ce.parse::<u64>().ok())
         .unwrap_or(DEFAULT_CACHE_EXPIRATION_HOURS);
+    let cache_jitter = env::var("CACHE_JITTER_SECONDS")
+        .ok()
+        .and_then(|ce| ce.parse::<u64>().ok())
+        .unwrap_or(DEFAULT_CACHE_JITTER_SECONDS);
     let statsd_host = env::var("STATSD_HOST").ok();
     // App Configuration
     let address = format!("0.0.0.0:{}", port);
     let listener =
         TcpListener::bind(address).unwrap_or_else(|_| panic!("Failed to bind to port {}!", port));
-    let configuration = Configuration::new(env, allowed_hosts, cache_expiration, default_quality);
+    let configuration = Configuration::new(
+        env,
+        allowed_hosts,
+        cache_expiration,
+        cache_jitter,
+        default_quality,
+    );
     // Logging
     use env_logger;
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
