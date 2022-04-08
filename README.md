@@ -13,7 +13,7 @@ An _experimental_ image resizing http service that wraps [ImageMagick](https://i
 The Rusty Resizer is wrapped in a minimal Docker container (image size is less than < 100MBs) that can be easily mounted as a standalone service:
 
 ```
-docker run -p 8080:8080 --envALLOWED_HOSTS=raw.githubusercontent.com ghcr.io/walterbm/rusty-resizer:latest
+docker run -p 8080:8080 --env ALLOWED_HOSTS=raw.githubusercontent.com ghcr.io/walterbm/rusty-resizer:latest
 ```
 
 ### From Source
@@ -58,7 +58,7 @@ The Rusty Resizer accepts all its configuration options through ENV variables:
 | ------------------------ | -------------------------------------------------------------------------------------- | ---------- |
 | `ALLOWED_HOSTS`          | **required** list of image hosts that will be accepted for resizing                    |            |
 | `DEFAULT_QUALITY`        | default compression quality for image formats that accept compression (e.g. jpeg)      | 85         |
-| `CACHE_EXPIRATION_HOURS` | use to populate `Cache-Control` & `Expires` headers in the final resized response      | 2880 hours |
+| `CACHE_EXPIRATION_HOURS` | used to populate `Cache-Control` & `Expires` headers in the final resized response     | 2880 hours |
 | `CACHE_JITTER_SECONDS`   | help give `Cache-Control` & `Expires` headers some variance to avoid a thundering herd | 0          |
 | `STATSD_HOST`            | StatsD host to accept metric data (metrics are only emitted when this is present)      |            |
 | `WORKERS`                | number of HTTP workers                                                                 | 4          |
