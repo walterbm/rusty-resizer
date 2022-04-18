@@ -37,7 +37,7 @@ async fn main() -> std::io::Result<()> {
     let listener =
         TcpListener::bind(address).unwrap_or_else(|_| panic!("Failed to bind to port {}!", port));
     let configuration = Configuration::new(
-        env,
+        env.clone(),
         allowed_hosts,
         cache_expiration,
         cache_jitter,
@@ -55,7 +55,9 @@ async fn main() -> std::io::Result<()> {
                 .expect("Failed to set UDP socket as non-blocking!");
             let sink = UdpMetricSink::from((statsd_host, DEFAULT_PORT), socket)
                 .expect("Failed to bind to UDP port!");
-            StatsdClient::from_sink("rusty.resizer", sink)
+            StatsdClient::builder("rusty.resizer", sink)
+                .with_tag("env", env.clone())
+                .build()
         }
         None => (StatsdClient::from_sink("rusty.resizer", NopMetricSink)),
     };
