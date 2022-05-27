@@ -295,3 +295,51 @@ async fn test_resize_can_handle_floating_point_target_dimensions() {
     assert_eq!(width, 225, "width is equal to 225px");
     assert_eq!(height, 225, "height is equal to 225px");
 }
+
+#[actix_rt::test]
+async fn test_resize_can_reduce_image_file_size_even_when_dimensions_dont_change() {
+    // Arrange
+    let address = spawn_app();
+    let client = reqwest::Client::new();
+    // test image one has dimensions of 2250px x 2250px and a file size of 1723518 bytes
+    let test_image_one = "https://raw.githubusercontent.com/walterbm/rusty-resizer/main/tests/fixtures/test-image-one.jpg";
+
+    // Act
+    let response = client
+        .get(format!("{}/resize?source={}", address, test_image_one))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    // Assert
+    assert!(response.status().is_success());
+    assert_eq!(
+        response.headers().get("Content-Type").unwrap(),
+        "image/jpeg",
+        "content type is equal to image/jpeg"
+    );
+    assert_eq!(
+        response.headers().get("Cache-Control").unwrap(),
+        "max-age=3600",
+        "cache control max age is equal to 3600"
+    );
+
+    let bytes = response
+        .bytes()
+        .await
+        .expect("Failed to read response bytes");
+
+    assert!(
+        bytes.len() < 1723518,
+        "response bytes should be less than original image bytes (1723518)"
+    );
+
+    let image = ImageReader::new(Cursor::new(bytes))
+        .with_guessed_format()
+        .unwrap()
+        .decode()
+        .expect("Failed to decode image");
+    let (width, height) = image.dimensions();
+    assert_eq!(width, 2250, "width is equal to 2250px");
+    assert_eq!(height, 2250, "height is equal to 2250px");
+}

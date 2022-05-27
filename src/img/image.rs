@@ -46,6 +46,10 @@ impl Image {
         let format = self.format()?;
 
         self.wand
+            .strip_image()
+            .map_err(|_| ImageError::FailedWrite)?;
+
+        self.wand
             .set_image_compression_quality(quality as usize)
             .map_err(|_| ImageError::FailedWrite)?;
 
