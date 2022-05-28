@@ -8,7 +8,8 @@ use actix_web::{
 use cadence::{CountedExt, StatsdClient, Timed};
 use futures_util::future::FutureExt;
 use http::Client;
-use img::{Image, ImageError};
+use image::ImageFormat;
+use img::{deserialize_image_format_external_enum, ImageError, ResizableImage};
 use magick_rust::magick_wand_genesis;
 use rand::Rng;
 use serde::Deserialize;
@@ -78,18 +79,21 @@ struct ResizeOptions {
     height: Option<f32>,
     width: Option<f32>,
     quality: Option<u8>,
+    #[serde(default, deserialize_with = "deserialize_image_format_external_enum")]
+    format: Option<ImageFormat>,
 }
 
 /// Resize an image
 ///
-/// Accepts four query parameters:
+/// Accepts five query parameters:
 ///     - source
 ///     - height
 ///     - width
 ///     - quality
+///     - format
 ///
 /// Example request:
-///  resize?source=url.jpeg&height=500&width=500&max_quality=85
+///  resize?source=url.jpeg&height=500&width=500&max_quality=85&format=webp
 ///
 async fn resize(
     options: web::Query<ResizeOptions>,
@@ -101,15 +105,17 @@ async fn resize(
 
     match response {
         Ok(response) => {
-            let mut image = Image::from_bytes(&response)?;
+            let mut image = ResizableImage::from_bytes(&response)?;
 
             image.resize(
                 options.width.map(|f| f.round() as usize),
                 options.height.map(|f| f.round() as usize),
             );
 
-            let buffer =
-                image.to_buffer_mut(options.quality.unwrap_or(configuration.default_quality))?;
+            let buffer = image.to_buffer_mut(
+                options.quality.unwrap_or(configuration.default_quality),
+                options.format.unwrap_or(image.format()?),
+            )?;
 
             let content_type = image.mime_type()?;
 

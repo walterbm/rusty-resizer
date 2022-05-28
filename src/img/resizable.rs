@@ -1,13 +1,15 @@
 use actix_web::web::Bytes;
+use image::ImageFormat;
 use magick_rust::MagickWand;
 use std::cmp;
-use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
-pub struct Image {
+use super::ImageError;
+
+pub struct ResizableImage {
     wand: MagickWand,
 }
 
-impl Image {
+impl ResizableImage {
     pub fn from_bytes(bytes: &Bytes) -> Result<Self, ImageError> {
         let wand = MagickWand::new();
         match wand.read_image_blob(bytes) {
@@ -42,9 +44,11 @@ impl Image {
             as usize
     }
 
-    pub fn to_buffer_mut(&mut self, quality: u8) -> Result<Vec<u8>, ImageError> {
-        let format = self.format()?;
-
+    pub fn to_buffer_mut(
+        &mut self,
+        quality: u8,
+        format: ImageFormat,
+    ) -> Result<Vec<u8>, ImageError> {
         self.wand
             .strip_image()
             .map_err(|_| ImageError::FailedWrite)?;
@@ -54,56 +58,37 @@ impl Image {
             .map_err(|_| ImageError::FailedWrite)?;
 
         self.wand
-            .write_image_blob(&format)
+            .write_image_blob(format.extensions_str()[0])
             .map_err(|_| ImageError::FailedWrite)
     }
 
-    pub fn format(&self) -> Result<String, ImageError> {
+    pub fn format(&self) -> Result<ImageFormat, ImageError> {
         self.wand
             .get_image_format()
             .map_err(|_| ImageError::InvalidFormat)
+            .and_then(|format| {
+                ImageFormat::from_extension(&format).ok_or(ImageError::InvalidFormat)
+            })
     }
 
     pub fn mime_type(self) -> Result<&'static str, ImageError> {
         let format = self.format()?;
 
-        match &format[..] {
-            "APNG" => Ok("image/apng"),
-            "AVIF" => Ok("image/avif"),
-            "GIF" => Ok("image/gif"),
-            "JPEG" => Ok("image/jpeg"),
-            "PNG" => Ok("image/png"),
-            "SVG" => Ok("image/svg+xml"),
-            "WEBP" => Ok("image/webp"),
+        match format {
+            ImageFormat::Avif => Ok("image/avif"),
+            ImageFormat::Jpeg => Ok("image/jpeg"),
+            ImageFormat::Png => Ok("image/png"),
+            ImageFormat::Gif => Ok("image/gif"),
+            ImageFormat::WebP => Ok("image/webp"),
+            ImageFormat::Tiff => Ok("image/tiff"),
+            ImageFormat::Tga => Ok("image/x-tga"),
+            ImageFormat::Dds => Ok("image/vnd-ms.dds"),
+            ImageFormat::Bmp => Ok("image/bmp"),
+            ImageFormat::Ico => Ok("image/x-icon"),
+            ImageFormat::Hdr => Ok("image/vnd.radiance"),
+            ImageFormat::OpenExr => Ok("image/x-exr"),
+            ImageFormat::Pnm => Ok("image/x-portable-bitmap"),
             _ => Ok("application/octet-stream"),
         }
-    }
-}
-
-pub enum ImageError {
-    InvalidImage,
-    InvalidFormat,
-    FailedWrite,
-}
-
-impl ImageError {
-    fn message(&self) -> &str {
-        match self {
-            Self::InvalidImage => "Invalid Image",
-            Self::InvalidFormat => "Invalid Format For Image",
-            Self::FailedWrite => "Failed To Write Image",
-        }
-    }
-}
-
-impl Display for ImageError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        write!(f, "{}", self.message())
-    }
-}
-
-impl Debug for ImageError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        write!(f, "{}", self.message())
     }
 }

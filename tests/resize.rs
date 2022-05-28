@@ -1,7 +1,7 @@
 mod support;
 use std::io::Cursor;
 
-use image::{io::Reader as ImageReader, GenericImageView};
+use image::{guess_format, io::Reader as ImageReader, GenericImageView, ImageFormat};
 use support::spawn_app;
 
 #[actix_rt::test]
@@ -297,7 +297,7 @@ async fn test_resize_can_handle_floating_point_target_dimensions() {
 }
 
 #[actix_rt::test]
-async fn test_resize_can_reduce_image_file_size_even_when_dimensions_dont_change() {
+async fn test_resize_can_reduce_image_file_size_even_when_dimensions_do_not_change() {
     // Arrange
     let address = spawn_app();
     let client = reqwest::Client::new();
@@ -340,6 +340,56 @@ async fn test_resize_can_reduce_image_file_size_even_when_dimensions_dont_change
         .decode()
         .expect("Failed to decode image");
     let (width, height) = image.dimensions();
+
     assert_eq!(width, 2250, "width is equal to 2250px");
     assert_eq!(height, 2250, "height is equal to 2250px");
+}
+
+#[actix_rt::test]
+async fn test_resize_can_convert_the_format_of_an_image() {
+    // Arrange
+    let address = spawn_app();
+    let client = reqwest::Client::new();
+    // test image one is a JPEG image
+    let test_image_one = "https://raw.githubusercontent.com/walterbm/rusty-resizer/main/tests/fixtures/test-image-one.jpg";
+
+    // Act
+    let response = client
+        .get(format!(
+            "{}/resize?source={}&width=225&height=225&format=webp",
+            address, test_image_one
+        ))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    // Assert
+    assert!(response.status().is_success());
+    assert_eq!(
+        response.headers().get("Content-Type").unwrap(),
+        "image/webp",
+        "content type is equal to image/webp"
+    );
+    assert_eq!(
+        response.headers().get("Cache-Control").unwrap(),
+        "max-age=3600",
+        "cache control max age is equal to 3600"
+    );
+
+    let bytes = response
+        .bytes()
+        .await
+        .expect("Failed to read response bytes");
+
+    assert_eq!(guess_format(&bytes).unwrap(), ImageFormat::WebP);
+
+    let image = ImageReader::new(Cursor::new(bytes))
+        .with_guessed_format()
+        .unwrap()
+        .decode()
+        .expect("Failed to decode image");
+    let (width, height) = image.dimensions();
+
+    assert_eq!(width, 225, "width is equal to 225px");
+    assert_eq!(height, 225, "height is equal to 225px");
 }
