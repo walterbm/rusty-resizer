@@ -49,6 +49,7 @@ curl localhost:8080/resize?source=image.jpeg&height=100&width=100&quality=85
 - `source`: **required** to specify the full url of the target image
 - `height` & `width`: the resized image's dimensions (if `height` or `width` are alone the other dimension is computed to preserve the aspect ratio)
 - `quality`: optionally set the compression quality for image formats that accept compression (e.g. jpeg)
+- `format`: convert the source to another format during the resize operation (e.g. png -> webp)
 
 ## Configuration
 
