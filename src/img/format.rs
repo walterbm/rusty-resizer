@@ -1,12 +1,10 @@
 use image::ImageFormat;
-use serde::{Deserialize, Deserializer};
+use serde::Deserialize;
 
-/// An mirror implementation of the image::ImageFormat crate enum
-/// for use when deserializing query parameters
-/// see: https://docs.rs/image/latest/image/enum.ImageFormat.html
-#[derive(Deserialize)]
-#[serde(rename_all = "lowercase", remote = "ImageFormat")]
-enum ImageFormatDef {
+#[derive(Deserialize, Clone, Copy, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum ResizeImageFormat {
+    Auto,
     Png,
     Jpeg,
     Gif,
@@ -23,19 +21,25 @@ enum ImageFormatDef {
     Avif,
 }
 
-/// Helper to deserialize a query parameter into an ImageFormat
-/// since Serde does not support a way to use "deserialize_with"
-/// when the data is inside an Option
-/// see: https://github.com/serde-rs/serde/issues/723
-pub fn deserialize_image_format_external_enum<'de, D>(
-    deserializer: D,
-) -> Result<Option<ImageFormat>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    struct Helper(#[serde(with = "ImageFormatDef")] ImageFormat);
-
-    let helper = Option::deserialize(deserializer)?;
-    Ok(helper.map(|Helper(external)| external))
+impl From<ResizeImageFormat> for Option<ImageFormat> {
+    fn from(resize_image_format: ResizeImageFormat) -> Option<ImageFormat> {
+        match resize_image_format {
+            ResizeImageFormat::Png => Some(ImageFormat::Png),
+            ResizeImageFormat::Jpeg => Some(ImageFormat::Jpeg),
+            ResizeImageFormat::Gif => Some(ImageFormat::Gif),
+            ResizeImageFormat::WebP => Some(ImageFormat::WebP),
+            ResizeImageFormat::Pnm => Some(ImageFormat::Pnm),
+            ResizeImageFormat::Tiff => Some(ImageFormat::Tiff),
+            ResizeImageFormat::Tga => Some(ImageFormat::Tga),
+            ResizeImageFormat::Dds => Some(ImageFormat::Dds),
+            ResizeImageFormat::Bmp => Some(ImageFormat::Bmp),
+            ResizeImageFormat::Ico => Some(ImageFormat::Ico),
+            ResizeImageFormat::Hdr => Some(ImageFormat::Hdr),
+            ResizeImageFormat::OpenExr => Some(ImageFormat::OpenExr),
+            ResizeImageFormat::Farbfeld => Some(ImageFormat::Farbfeld),
+            ResizeImageFormat::Avif => Some(ImageFormat::Avif),
+            // can not convert ResizeImageFormat::Auto into an ImageFormat
+            ResizeImageFormat::Auto => None,
+        }
+    }
 }

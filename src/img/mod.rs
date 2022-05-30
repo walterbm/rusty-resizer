@@ -1,5 +1,5 @@
 pub use self::error::ImageError;
-pub use self::format::deserialize_image_format_external_enum;
+pub use self::format::ResizeImageFormat;
 pub use self::resizable::ResizableImage;
 
 pub mod error;

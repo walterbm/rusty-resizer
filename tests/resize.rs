@@ -100,6 +100,10 @@ async fn test_resize_can_resize_an_image() {
         "max-age=3600",
         "cache control max age is equal to 3600"
     );
+    assert!(
+        response.headers().get("Vary").is_none(),
+        "response does not vary by request 'accept' header"
+    );
 
     let bytes = response
         .bytes()
@@ -144,6 +148,10 @@ async fn test_resize_can_resize_an_image_with_only_one_dimension_and_preserve_as
         response.headers().get("Cache-Control").unwrap(),
         "max-age=3600",
         "cache control max age is equal to 3600"
+    );
+    assert!(
+        response.headers().get("Vary").is_none(),
+        "response does not vary by request 'accept' header"
     );
 
     let bytes = response
@@ -190,6 +198,10 @@ async fn test_resize_can_resize_an_image_with_one_outsized_dimension_and_preserv
         "max-age=3600",
         "cache control max age is equal to 3600"
     );
+    assert!(
+        response.headers().get("Vary").is_none(),
+        "response does not vary by request 'accept' header"
+    );
 
     let bytes = response
         .bytes()
@@ -234,6 +246,10 @@ async fn test_resize_can_noop_if_target_dimensions_are_the_same_as_target_image(
         response.headers().get("Cache-Control").unwrap(),
         "max-age=3600",
         "cache control max age is equal to 3600"
+    );
+    assert!(
+        response.headers().get("Vary").is_none(),
+        "response does not vary by request 'accept' header"
     );
 
     let bytes = response
@@ -280,6 +296,10 @@ async fn test_resize_can_handle_floating_point_target_dimensions() {
         "max-age=3600",
         "cache control max age is equal to 3600"
     );
+    assert!(
+        response.headers().get("Vary").is_none(),
+        "response does not vary by request 'accept' header"
+    );
 
     let bytes = response
         .bytes()
@@ -322,6 +342,10 @@ async fn test_resize_can_reduce_image_file_size_even_when_dimensions_do_not_chan
         response.headers().get("Cache-Control").unwrap(),
         "max-age=3600",
         "cache control max age is equal to 3600"
+    );
+    assert!(
+        response.headers().get("Vary").is_none(),
+        "response does not vary by request 'accept' header"
     );
 
     let bytes = response
@@ -374,6 +398,68 @@ async fn test_resize_can_convert_the_format_of_an_image() {
         response.headers().get("Cache-Control").unwrap(),
         "max-age=3600",
         "cache control max age is equal to 3600"
+    );
+    assert!(
+        response.headers().get("Vary").is_none(),
+        "response does not vary by request 'accept' header"
+    );
+
+    let bytes = response
+        .bytes()
+        .await
+        .expect("Failed to read response bytes");
+
+    assert_eq!(guess_format(&bytes).unwrap(), ImageFormat::WebP);
+
+    let image = ImageReader::new(Cursor::new(bytes))
+        .with_guessed_format()
+        .unwrap()
+        .decode()
+        .expect("Failed to decode image");
+    let (width, height) = image.dimensions();
+
+    assert_eq!(width, 225, "width is equal to 225px");
+    assert_eq!(height, 225, "height is equal to 225px");
+}
+
+#[actix_rt::test]
+async fn test_resize_can_convert_source_image_based_on_automatic_content_negotiation() {
+    // Arrange
+    let address = spawn_app();
+    let client = reqwest::Client::new();
+    // test image one is a JPEG image
+    let test_image_one = "https://raw.githubusercontent.com/walterbm/rusty-resizer/main/tests/fixtures/test-image-one.jpg";
+
+    // Act
+    let response = client
+        .get(format!(
+            "{}/resize?source={}&width=225&height=225&format=auto",
+            address, test_image_one
+        ))
+        .header(
+            "Accept",
+            "image/webp,image/png,image/svg+xml,image/*;q=0.8,video/*;q=0.8,*/*;q=0.5",
+        )
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    // Assert
+    assert!(response.status().is_success());
+    assert_eq!(
+        response.headers().get("Content-Type").unwrap(),
+        "image/webp",
+        "content type is equal to image/webp"
+    );
+    assert_eq!(
+        response.headers().get("Cache-Control").unwrap(),
+        "max-age=3600",
+        "cache control max age is equal to 3600"
+    );
+    assert_eq!(
+        response.headers().get("Vary").unwrap(),
+        "Accept",
+        "response varies by request 'accept' header"
     );
 
     let bytes = response

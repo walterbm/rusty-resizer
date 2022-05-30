@@ -1,7 +1,9 @@
 extern crate log;
 
+use actix_http::header;
 use actix_web::dev::Server;
 use actix_web::web::Data;
+use actix_web::HttpRequest;
 use actix_web::{
     dev::Service as _, error, middleware::Logger, web, App, HttpResponse, HttpServer, Responder,
 };
@@ -9,7 +11,7 @@ use cadence::{CountedExt, StatsdClient, Timed};
 use futures_util::future::FutureExt;
 use http::Client;
 use image::ImageFormat;
-use img::{deserialize_image_format_external_enum, ImageError, ResizableImage};
+use img::{ImageError, ResizableImage, ResizeImageFormat};
 use magick_rust::magick_wand_genesis;
 use rand::Rng;
 use serde::Deserialize;
@@ -22,6 +24,7 @@ mod http;
 mod img;
 
 static START: Once = Once::new();
+const ACCEPTS_WEBP_HEADER: &[u8; 10] = b"image/webp";
 
 #[derive(Clone)]
 pub struct Configuration {
@@ -73,14 +76,23 @@ impl Configuration {
     }
 }
 
+fn supports_webp(request: &HttpRequest) -> bool {
+    match request.headers().get(header::ACCEPT) {
+        Some(accept_header) => accept_header
+            .as_bytes()
+            .windows(ACCEPTS_WEBP_HEADER.len())
+            .any(move |sub_slice| sub_slice == ACCEPTS_WEBP_HEADER),
+        None => false,
+    }
+}
+
 #[derive(Deserialize)]
 struct ResizeOptions {
     source: String,
     height: Option<f32>,
     width: Option<f32>,
     quality: Option<u8>,
-    #[serde(default, deserialize_with = "deserialize_image_format_external_enum")]
-    format: Option<ImageFormat>,
+    format: Option<ResizeImageFormat>,
 }
 
 /// Resize an image
@@ -98,6 +110,7 @@ struct ResizeOptions {
 async fn resize(
     options: web::Query<ResizeOptions>,
     configuration: web::Data<Configuration>,
+    request: HttpRequest,
 ) -> Result<HttpResponse, ImageError> {
     let client = Client::new(&configuration.allowed_hosts);
 
@@ -112,9 +125,19 @@ async fn resize(
                 options.height.map(|f| f.round() as usize),
             );
 
+            let format = options.format.and_then(|request_format| {
+                // If automatic content negotiation is enabled
+                // attempt to convert to WebP when that is supported by incoming request
+                if request_format == ResizeImageFormat::Auto && supports_webp(&request) {
+                    Some(ImageFormat::WebP)
+                } else {
+                    request_format.into()
+                }
+            });
+
             let buffer = image.to_buffer_mut(
                 options.quality.unwrap_or(configuration.default_quality),
-                options.format.unwrap_or(image.format()?),
+                format.unwrap_or(image.format()?),
             )?;
 
             let content_type = image.mime_type()?;
@@ -127,18 +150,25 @@ async fn resize(
             };
             let expire_time_in_seconds = configuration.cache_expiration * 60 * 60 + jitter;
 
-            let response = HttpResponse::Ok()
+            let mut builder = HttpResponse::Ok();
+
+            builder
                 .content_type(content_type)
-                .append_header(("Last-Modified", httpdate::fmt_http_date(now)))
-                .append_header((
-                    "Cache-Control",
+                .insert_header((header::LAST_MODIFIED, httpdate::fmt_http_date(now)))
+                .insert_header((
+                    header::CACHE_CONTROL,
                     format!("max-age={}", expire_time_in_seconds),
                 ))
-                .append_header((
-                    "Expires",
+                .insert_header((
+                    header::EXPIRES,
                     httpdate::fmt_http_date(now + Duration::from_secs(expire_time_in_seconds)),
-                ))
-                .body(buffer);
+                ));
+
+            if options.format == Some(ResizeImageFormat::Auto) {
+                builder.insert_header((header::VARY, "Accept"));
+            }
+
+            let response = builder.body(buffer);
 
             Ok(response)
         }
