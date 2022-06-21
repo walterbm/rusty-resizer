@@ -19,7 +19,7 @@ jobs:
           sudo apt build-dep imagemagick
           sudo apt-get install checkinstall libwebp-dev libopenjp2-7-dev librsvg2-dev libde265-dev
           cd ~
-          curl https://download.imagemagick.org/ImageMagick/download/ImageMagick.tar.gz | tar xz
+          curl https://imagemagick.org/archive/ImageMagick.tar.gz  | tar xz
           cd ImageMagick-7*
           sudo ./configure --with-magick-plus-plus=no --with-perl=no
           sudo make

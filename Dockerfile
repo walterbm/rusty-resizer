@@ -26,7 +26,7 @@ RUN update-ca-certificates
 
 ENV IMAGE_MAGICK_VERSION 7.1
 
-RUN curl https://download.imagemagick.org/ImageMagick/download/ImageMagick.tar.gz | tar xz \
+RUN curl https://imagemagick.org/archive/ImageMagick.tar.gz  | tar xz \
      && cd ImageMagick-${IMAGE_MAGICK_VERSION}* \
      && ./configure --with-magick-plus-plus=no --with-perl=no \
      && make \
