@@ -1,7 +1,7 @@
 use image::ImageFormat;
 use serde::Deserialize;
 
-#[derive(Deserialize, Clone, Copy, PartialEq)]
+#[derive(Deserialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ResizeImageFormat {
     Auto,

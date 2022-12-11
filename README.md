@@ -49,7 +49,7 @@ curl localhost:8080/resize?source=image.jpeg&height=100&width=100&quality=85&for
 - `source`: **required** to specify the full url of the target image
 - `height` & `width`: the resized image's dimensions (if `height` or `width` are alone the other dimension is computed to preserve the aspect ratio)
 - `quality`: optionally set the compression quality for image formats that accept compression (e.g. jpeg)
-- `format`: convert the source to another format during the resize operation (e.g. png -> jpeg) and if set to `auto` attempt to automatically convert the source image to `WebP` based on client's `Accept` header
+- `format`: convert the source to another format during the resize operation (e.g. png -> jpeg) and if set to `format=auto` attempt to automatically convert the source image to `WebP` based on client's `Accept` header
 
 ## Configuration
 
@@ -80,7 +80,7 @@ curl localhost:8080/resize?source=https://raw.githubusercontent.com/image.jpeg&h
 
 For best results deploy the Rusty Resizer behind a CDN to help amortize the cost of resizing an image. If the CDN respects standard cache headers the cache time for the the resized images can be controlled through the `CACHE_EXPIRATION_HOURS` ENV option.
 
-If using automatic content negotiation with the `format=auto` parameter make sure the CDN in front of the the Rusty Resizer respects the outgoing `Vary` header and/or can be configured to incorporate the incoming `Accept` header into the cache key. For best results add some pre-processing to the CDN to normalize the `Accept` header.
+If using automatic content negotiation with the `format=auto` parameter make sure the CDN in front of the the Rusty Resizer respects the outgoing `Vary` header and/or can be configured to incorporate the incoming `Accept` header into the cache key. To optimize cache performance add some pre-processing to the CDN to normalize the `Accept` header.
 
 ## Test
 

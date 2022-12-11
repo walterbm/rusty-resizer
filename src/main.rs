@@ -59,7 +59,7 @@ async fn main() -> std::io::Result<()> {
                 .with_tag("env", env.clone())
                 .build()
         }
-        None => (StatsdClient::from_sink("rusty.resizer", NopMetricSink)),
+        None => StatsdClient::from_sink("rusty.resizer", NopMetricSink),
     };
     // Start
     run(listener, configuration, statsd, workers)?.await
