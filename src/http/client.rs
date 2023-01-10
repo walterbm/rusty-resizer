@@ -2,7 +2,10 @@ use actix_web::http::StatusCode;
 use actix_web::web::Bytes;
 use awc::{Client as ActixWebClient, Connector};
 use openssl::ssl::{SslConnector, SslMethod};
-use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::{
+    collections::HashSet,
+    fmt::{Display, Formatter, Result as FmtResult},
+};
 use url::{Host, Url};
 
 static USER_AGENT: &str = "rusty-resizer";
@@ -11,11 +14,11 @@ const MAX_ALLOWED_BYTES: usize = 20_000_000;
 pub struct Client<'app> {
     client: ActixWebClient,
     user_agent: &'static str,
-    allowed_hosts: &'app [Host],
+    allowed_hosts: &'app HashSet<Host>,
 }
 
 impl<'app> Client<'app> {
-    pub fn new(allowed_hosts: &'app [Host]) -> Self {
+    pub fn new(allowed_hosts: &'app HashSet<Host>) -> Self {
         let user_agent = USER_AGENT;
         let ssl_builder = SslConnector::builder(SslMethod::tls()).unwrap();
 

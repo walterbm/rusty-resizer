@@ -15,6 +15,7 @@ use img::{ImageError, ResizableImage, ResizeImageFormat};
 use magick_rust::magick_wand_genesis;
 use rand::Rng;
 use serde::Deserialize;
+use std::collections::HashSet;
 use std::net::TcpListener;
 use std::sync::{Arc, Once};
 use std::time::{Duration, Instant, SystemTime};
@@ -29,7 +30,7 @@ const ACCEPTS_WEBP_HEADER: &[u8; 10] = b"image/webp";
 #[derive(Clone)]
 pub struct Configuration {
     pub env: String,
-    pub allowed_hosts: Vec<Host>,
+    pub allowed_hosts: HashSet<Host>,
     pub cache_expiration: u64,
     pub cache_jitter: u64,
     pub default_quality: u8,
@@ -40,12 +41,13 @@ impl Configuration {
     ///
     /// ```rust
     /// # use url::Host;
+    /// # use std::collections::HashSet;
     /// # use rusty_resizer::Configuration;
     ///
     /// let config = Configuration::new(String::from("test"), String::from("  x.com,  y.com,z.com"), 2880, 60, 50);
     ///
     /// assert_eq!("test", config.env);
-    /// assert_eq!(vec![Host::parse("x.com").unwrap(), Host::parse("y.com").unwrap(), Host::parse("z.com").unwrap()], config.allowed_hosts);
+    /// assert_eq!(HashSet::from_iter(vec![Host::parse("x.com").unwrap(), Host::parse("y.com").unwrap(), Host::parse("z.com").unwrap()]), config.allowed_hosts);
     /// assert_eq!(2880, config.cache_expiration);
     /// assert_eq!(60, config.cache_jitter);
     /// assert_eq!(50, config.default_quality);
@@ -64,7 +66,7 @@ impl Configuration {
             .split(',')
             .map(str::to_string)
             .filter_map(|s| Host::parse(&s).ok())
-            .collect::<Vec<Host>>();
+            .collect::<HashSet<Host>>();
 
         Configuration {
             env,
@@ -143,11 +145,7 @@ async fn resize(
             let content_type = image.mime_type()?;
 
             let now = SystemTime::now();
-            let jitter = if configuration.cache_jitter > 0 {
-                rand::thread_rng().gen_range(0..configuration.cache_jitter)
-            } else {
-                0
-            };
+            let jitter = rand::thread_rng().gen_range(0..=configuration.cache_jitter);
             let expire_time_in_seconds = configuration.cache_expiration * 60 * 60 + jitter;
 
             let mut builder = HttpResponse::Ok();

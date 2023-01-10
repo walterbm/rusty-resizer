@@ -1,4 +1,4 @@
-use std::net::TcpListener;
+use std::{collections::HashSet, net::TcpListener};
 
 use cadence::{NopMetricSink, StatsdClient};
 use rusty_resizer::Configuration;
@@ -9,7 +9,7 @@ pub fn spawn_app() -> String {
     let port = listener.local_addr().unwrap().port();
     let configuration = Configuration {
         env: String::from("test"),
-        allowed_hosts: vec![Host::parse("raw.githubusercontent.com").unwrap()],
+        allowed_hosts: HashSet::from_iter(vec![Host::parse("raw.githubusercontent.com").unwrap()]),
         cache_expiration: 1,
         cache_jitter: 0,
         default_quality: 85,
