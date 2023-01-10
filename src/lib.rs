@@ -4,11 +4,9 @@ use actix_http::header;
 use actix_web::dev::Server;
 use actix_web::web::Data;
 use actix_web::HttpRequest;
-use actix_web::{
-    dev::Service as _, error, middleware::Logger, web, App, HttpResponse, HttpServer, Responder,
-};
-use cadence::{CountedExt, StatsdClient, Timed};
-use futures_util::future::FutureExt;
+use actix_web::{error, middleware::Logger, web, App, HttpResponse, HttpServer, Responder};
+use cadence::StatsdClient;
+use http::middleware::statsd::StatsD;
 use http::Client;
 use image::ImageFormat;
 use img::{ImageError, ResizableImage, ResizeImageFormat};
@@ -18,7 +16,7 @@ use serde::Deserialize;
 use std::collections::HashSet;
 use std::net::TcpListener;
 use std::sync::{Arc, Once};
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, SystemTime};
 use url::Host;
 
 mod http;
@@ -200,31 +198,8 @@ pub fn run(
     let statsd = Arc::new(statsd);
 
     let server = HttpServer::new(move || {
-        let statsd = statsd.clone();
         App::new()
-            .wrap_fn(move |req, srv| {
-                let statsd = statsd.clone();
-                let now = Instant::now();
-
-                srv.call(req).map(move |res| {
-                    match &res {
-                        Ok(res) => {
-                            if res.request().path() == "/resize" {
-                                statsd
-                                    .time_with_tags("resize", now.elapsed())
-                                    .with_tag("status", res.response().status().as_str())
-                                    .try_send()
-                                    .ok();
-                            }
-                        }
-                        Err(_) => {
-                            statsd.incr("unknown.error").ok();
-                        }
-                    }
-
-                    res
-                })
-            })
+            .wrap(StatsD::new(statsd.clone()).exclude("/ping"))
             .wrap(Logger::default().exclude("/ping"))
             .route("/ping", web::get().to(ping))
             .route("/resize", web::get().to(resize))
