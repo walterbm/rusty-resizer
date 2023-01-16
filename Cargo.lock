@@ -1684,6 +1684,7 @@ dependencies = [
  "log",
  "magick_rust",
  "openssl",
+ "pin-project-lite",
  "rand",
  "reqwest",
  "serde",

@@ -1,7 +1,9 @@
 use std::{
     collections::HashSet,
     future::{ready, Ready},
+    pin::Pin,
     sync::Arc,
+    task::{Context, Poll},
     time::Instant,
 };
 
@@ -10,7 +12,8 @@ use actix_web::{
     Error,
 };
 use cadence::{StatsdClient, Timed};
-use futures_util::future::LocalBoxFuture;
+use futures_util::Future;
+use pin_project_lite::pin_project;
 
 /// Factory to create a StatsDMiddleware that can be used to emit basic request metrics using StatsD.
 pub struct StatsD {
@@ -72,30 +75,63 @@ where
 {
     type Response = ServiceResponse<B>;
     type Error = Error;
-    type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
+    type Future = StatsDFuture<S::Future>;
 
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        if self.exclude.contains(req.path()) {
-            Box::pin(self.service.call(req))
-        } else {
-            let statsd = self.client.clone();
-            let now = Instant::now();
+        let start = Instant::now();
+        let statsd = self.client.clone();
+        let exclude = self.exclude.contains(req.path());
+        // return a custom future to avoid relying on BoxFuture and adding extra allocations
+        StatsDFuture {
+            start,
+            statsd,
+            exclude,
+            future: self.service.call(req),
+        }
+    }
+}
 
-            let fut = self.service.call(req);
+// pin project is used to access underlying future
+pin_project! {
+    pub struct StatsDFuture<F> {
+        #[pin]
+        future: F,
+        start: Instant,
+        exclude: bool,
+        statsd: Arc<StatsdClient>,
+    }
+}
 
-            Box::pin(async move {
-                let res = fut.await?;
+impl<F, B> Future for StatsDFuture<F>
+where
+    F: Future<Output = Result<ServiceResponse<B>, Error>>,
+{
+    type Output = F::Output;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let this = self.project();
+        if *this.exclude {
+            return this.future.poll(cx);
+        }
+
+        let result = match this.future.poll(cx) {
+            Poll::Pending => return Poll::Pending,
+            Poll::Ready(result) => result,
+        };
+
+        match result {
+            Ok(res) => {
                 let tag = &res.request().path()[1..].replace('/', ".");
-                statsd
-                    .time_with_tags(tag, now.elapsed())
+                this.statsd
+                    .time_with_tags(tag, this.start.elapsed())
                     .with_tag("status", res.response().status().as_str())
                     .try_send()
                     .ok();
-
-                Ok(res)
-            })
+                Poll::Ready(Ok(res))
+            }
+            Err(e) => Poll::Ready(Err(e)),
         }
     }
 }
