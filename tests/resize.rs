@@ -121,6 +121,65 @@ async fn test_resize_can_resize_an_image() {
 }
 
 #[actix_rt::test]
+async fn test_resize_can_resize_an_animated_image() {
+    // Arrange
+    let address = spawn_app();
+    let client = reqwest::Client::new();
+    let test_image_one = "https://raw.githubusercontent.com/walterbm/rusty-resizer/main/tests/fixtures/test-image-animated.gif";
+
+    // Act
+    let response = client
+        .get(format!(
+            "{}/resize?source={}&width=100",
+            address, test_image_one
+        ))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    // Assert
+    assert!(response.status().is_success());
+    assert_eq!(
+        response.headers().get("Content-Type").unwrap(),
+        "image/gif",
+        "content type is equal to image/gif"
+    );
+    assert_eq!(
+        response.headers().get("Cache-Control").unwrap(),
+        "max-age=3600",
+        "cache control max age is equal to 3600"
+    );
+    assert!(
+        response.headers().get("Vary").is_none(),
+        "response does not vary by request 'accept' header"
+    );
+
+    let bytes = response
+        .bytes()
+        .await
+        .expect("Failed to read response bytes");
+
+    let mut options = gif::DecodeOptions::new();
+    options.set_color_output(gif::ColorOutput::RGBA);
+
+    let mut gif_decoder = options
+        .read_info(Cursor::new(bytes))
+        .expect("Failed to decode animated image");
+
+    let mut frame_counter = 0;
+    while let Some(frame) = gif_decoder
+        .read_next_frame()
+        .expect("Failed to decode image frame")
+    {
+        frame_counter += 1;
+        assert_eq!(frame.width, 99, "width is equal to 99px");
+        assert_eq!(frame.height, 57, "height is equal to 57px");
+    }
+
+    assert_eq!(frame_counter, 55, "resized animated image has 55 frames");
+}
+
+#[actix_rt::test]
 async fn test_resize_can_resize_an_image_with_only_one_dimension_and_preserve_aspect_ratio() {
     // Arrange
     let address = spawn_app();

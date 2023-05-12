@@ -30,7 +30,12 @@ impl ResizableImage {
         };
 
         if !(width == self.wand.get_image_width() && height == self.wand.get_image_height()) {
-            self.wand.thumbnail_image(width, height);
+            // if image has multiple frames use fit to resize the entire scene
+            if self.wand.get_image_scene() > 0 {
+                self.wand.fit(width, height);
+            } else {
+                self.wand.thumbnail_image(width, height);
+            }
         }
     }
 
@@ -58,7 +63,7 @@ impl ResizableImage {
             .map_err(|_| ImageError::FailedWrite)?;
 
         self.wand
-            .write_image_blob(format.extensions_str()[0])
+            .write_images_blob(format.extensions_str()[0])
             .map_err(|_| ImageError::FailedWrite)
     }
 
@@ -66,9 +71,7 @@ impl ResizableImage {
         self.wand
             .get_image_format()
             .map_err(|_| ImageError::InvalidFormat)
-            .and_then(|format| {
-                ImageFormat::from_extension(&format).ok_or(ImageError::InvalidFormat)
-            })
+            .and_then(|format| ImageFormat::from_extension(format).ok_or(ImageError::InvalidFormat))
     }
 
     pub fn mime_type(self) -> Result<&'static str, ImageError> {
