@@ -22,7 +22,7 @@ docker run -p 8080:8080 --env ALLOWED_HOSTS=raw.githubusercontent.com ghcr.io/wa
 1. [Install ImageMagick](https://imagemagick.org/script/download.php)
 2. Install Dependencies
    ```sh
-   cargo install
+   cargo install --path .
    ```
 3. Start the Server
    ```sh
