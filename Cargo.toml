@@ -20,7 +20,7 @@ futures-util = "0.3.21"
 httpdate = "1.0.2"
 image = "0.24.2"
 log = "0.4.17"
-magick_rust = { version = "0.17.0", features = ["disable-hdri"] }
+magick_rust = { version = "0.18.0", features = ["disable-hdri"] }
 openssl = "0.10.48"
 pin-project-lite = "0.2"
 rand = "0.8.5"
