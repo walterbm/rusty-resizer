@@ -1169,8 +1169,7 @@ dependencies = [
 [[package]]
 name = "magick_rust"
 version = "0.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cf5e5282afc226caad138bcc3969f62f2460c8df3680d6036878cb5f6c0925c"
+source = "git+https://github.com/walterbm/magick-rust.git?branch=add-support-for-coalesce#834d30041efc9cc4d962ac6f9b28198dca29b311"
 dependencies = [
  "bindgen",
  "libc",

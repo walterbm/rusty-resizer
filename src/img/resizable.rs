@@ -54,6 +54,10 @@ impl ResizableImage {
         quality: u8,
         format: ImageFormat,
     ) -> Result<Vec<u8>, ImageError> {
+        if self.wand.get_image_scene() > 0 {
+            self.wand.coalesce().map_err(|_| ImageError::FailedWrite)?;
+        }
+
         self.wand
             .strip_image()
             .map_err(|_| ImageError::FailedWrite)?;
