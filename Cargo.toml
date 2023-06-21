@@ -23,7 +23,7 @@ log = "0.4.17"
 magick_rust = { git = "https://github.com/walterbm/magick-rust.git", branch = "add-support-for-coalesce", features = [
     "disable-hdri"
 ] }
-openssl = "0.10.52"
+openssl = "0.10.55"
 pin-project-lite = "0.2"
 rand = "0.8.5"
 serde = { version = "1.0.163", features = ["derive"] }
