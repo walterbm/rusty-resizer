@@ -20,8 +20,8 @@ futures-util = "0.3.21"
 httpdate = "1.0.2"
 image = "0.24.6"
 log = "0.4.17"
-magick_rust = { git = "https://github.com/walterbm/magick-rust.git", branch = "add-support-for-coalesce", features = [
-    "disable-hdri"
+magick_rust = { git = "https://github.com/nlfiedler/magick-rust", features = [
+    "disable-hdri",
 ] }
 openssl = "0.10.52"
 pin-project-lite = "0.2"
