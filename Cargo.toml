@@ -23,7 +23,7 @@ log = "0.4"
 magick_rust = { git = "https://github.com/nlfiedler/magick-rust", features = [
     "disable-hdri",
 ] }
-openssl = "0.10.55"
+openssl = "0.10.60"
 pin-project-lite = "0.2"
 rand = "0.8.5"
 serde = { version = "1", features = ["derive"] }
